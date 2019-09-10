@@ -45,7 +45,7 @@ public class DiscRankSpider extends LoggerSupport {
                     } else {
                         if (asin.equals(parser.getAsin())) {
                             LOGGER.info("扫描日亚排名({}/{}): ASIN={}, RANK={}",
-                                    count.get(), asins.size(), asin, String.valueOf(parser.parseRank(document)));
+                                    count.get(), asins.size(), asin, parser.parseRank(document));
                             discInfos.put(asin, parser);
                         } else {
                             LOGGER.warn("扫描日亚排名({}/{}): DiffPage({}->{})",
@@ -80,8 +80,6 @@ public class DiscRankSpider extends LoggerSupport {
     }
 
     public static class DiscInfoParser {
-
-        private static Pattern rankReg = Pattern.compile(" - ([,\\d]+)位");
 
         private String title;
         private String type;
@@ -177,12 +175,24 @@ public class DiscRankSpider extends LoggerSupport {
         private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
         private String parseDate(Document document) {
+            Pattern pattern = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
             for (Element element : document.select("td.bucket>div.content li")) {
-                if (element.text().startsWith("発売日 ")) {
-                    return element.text().substring(4).trim();
+                Matcher matcher = pattern.matcher(element.text());
+                if (matcher.find()) {
+                    String date = LocalDate.of(
+                            Integer.parseInt(matcher.group("year")),
+                            Integer.parseInt(matcher.group("month")),
+                            Integer.parseInt(matcher.group("dom"))
+                    ).format(formatter);
+                    if (type.equals("Cd") && element.text().contains("CD")) {
+                        return date;
+                    }
+                    if (element.text().contains("発売日")) {
+                        return date;
+                    }
                 }
             }
-            return LocalDate.now().format(formatter);
+            return null;
         }
 
         private String parseAsin(Document document) {
@@ -193,6 +203,8 @@ public class DiscRankSpider extends LoggerSupport {
             }
             return null;
         }
+
+        private static Pattern rankReg = Pattern.compile(" - ([,\\d]+)位");
 
         private Integer parseRank(Document document) {
             Matcher matcher = rankReg.matcher(document.select("#SalesRank").text());
