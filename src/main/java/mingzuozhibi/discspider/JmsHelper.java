@@ -19,6 +19,10 @@ public class JmsHelper {
     @Autowired
     private JmsTemplate template;
 
+    public void doSend(String name, String message) {
+        template.convertAndSend(name, message);
+    }
+
     public void sendInfo(String message) {
         String msgData = buildMsgData("info", message).toString();
         template.convertAndSend("module.message", msgData);

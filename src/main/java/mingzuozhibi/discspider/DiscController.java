@@ -146,6 +146,23 @@ public class DiscController extends BaseController {
             listOpts.remove("next.update.asins", 0, asin);
         });
         jmsHelper.sendInfo("剩余未抓取碟片数量：" + listOpts.size("next.update.asins"));
+
+        sendPrevUpdateDiscs();
+    }
+
+    @GetMapping("/sendPrevUpdateDiscs")
+    public void sendPrevUpdateDiscs() {
+        List<String> discs = listOpts.range("prev.update.discs", 0, -1);
+        if (discs == null) {
+            jmsHelper.sendWarn("sendPrevUpdateDiscs: no data");
+        } else {
+            JsonArray discInfos = new JsonArray();
+            discs.forEach(json -> {
+                discInfos.add(gson.fromJson(json, JsonObject.class));
+            });
+            jmsHelper.doSend("prev.update.discs", discInfos.toString());
+            log.info("JMS -> prev.update.discs size={}", discs.size());
+        }
     }
 
 }
