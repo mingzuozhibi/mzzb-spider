@@ -111,7 +111,7 @@ public class DiscController extends BaseController {
         }
     }
 
-    @PostMapping("/startNextUpdate")
+    @GetMapping("/startNextUpdate")
     @Scheduled(cron = "0 0 3/6 * * ?")
     public String startFetchNextRanks() {
         jmsHelper.sendInfo("start next update");

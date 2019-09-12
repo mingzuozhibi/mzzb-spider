@@ -86,7 +86,6 @@ public class DiscSpider {
                             break;
                         } else if (document.outerHtml().contains("api-services-support@amazon.com")) {
                             jmsHelper.sendWarn("扫描日亚排名：已发现日亚反爬虫系统");
-                            break;
                         }
                         errorCount.incrementAndGet();
                     }
