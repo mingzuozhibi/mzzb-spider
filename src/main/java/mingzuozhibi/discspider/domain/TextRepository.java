@@ -1,4 +1,4 @@
-package mingzuozhibi.spider.domain;
+package mingzuozhibi.discspider.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

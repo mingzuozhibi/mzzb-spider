@@ -1,8 +1,9 @@
-package mingzuozhibi.spider.domain;
+package mingzuozhibi.discspider.domain;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import mingzuozhibi.common.BaseModel;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
