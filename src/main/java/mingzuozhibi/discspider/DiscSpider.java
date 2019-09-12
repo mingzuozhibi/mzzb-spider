@@ -36,7 +36,11 @@ public class DiscSpider {
                 Document document = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
                 DiscParser parser = new DiscParser(document);
                 log.info("抓取单个碟片成功[{}][{}]", asin, parser);
-                discRef.set(parser);
+                if (parser.getAsin() != null) {
+                    discRef.set(parser);
+                } else if (hasAmazonNoSpider(document)) {
+                    errorRef.set(new Exception("已发现日亚反爬虫系统"));
+                }
             } catch (RuntimeException e) {
                 log.warn("抓取单个碟片失败[{}]", asin);
                 errorRef.set(e);
@@ -47,6 +51,10 @@ public class DiscSpider {
         } else {
             throw errorRef.get();
         }
+    }
+
+    private boolean hasAmazonNoSpider(Document document) {
+        return document != null && document.outerHtml().contains("api-services-support@amazon.com");
     }
 
     public Map<String, DiscParser> fetchDiscs(List<String> asins) {
@@ -74,10 +82,10 @@ public class DiscSpider {
                                 count.get(), taskCount, asin, parser.getRank()));
                     } else {
                         if (errorCount.get() >= 5) {
-                            jmsHelper.sendWarn("扫描日亚排名：连续5次未能抓取排名，本次扫描终止");
+                            jmsHelper.sendWarn("扫描日亚排名：连续5次未能抓取排名");
                             break;
                         } else if (document.outerHtml().contains("api-services-support@amazon.com")) {
-                            jmsHelper.sendWarn("扫描日亚排名：已发现日亚反爬虫系统，本次扫描终止");
+                            jmsHelper.sendWarn("扫描日亚排名：已发现日亚反爬虫系统");
                             break;
                         }
                         errorCount.incrementAndGet();
