@@ -19,41 +19,41 @@ public class JmsHelper {
     @Autowired
     private JmsTemplate template;
 
-    public void sendAddr(String moduleAddr) {
-        JsonObject root = new JsonObject();
-        root.addProperty("name", moduleName);
-        root.addProperty("addr", moduleAddr);
-        jmsSend("module.connect", root.toString());
-    }
-
     public void sendInfo(String message) {
-        sendModuleMsg("info", message);
+        String msgData = buildMsgData("info", message).toString();
+        template.convertAndSend("module.message", msgData);
         log.info("JMS -> {} {}", "module.message", message);
     }
 
     public void sendWarn(String message) {
-        sendModuleMsg("warn", message);
+        String msgData = buildMsgData("warn", message).toString();
+        template.convertAndSend("module.message", msgData);
         log.warn("JMS -> {} {}", "module.message", message);
     }
 
-    private void sendModuleMsg(String type, String message) {
-        JsonObject root = new JsonObject();
-        root.addProperty("name", moduleName);
-        root.add("data", buildData(type, message));
-        jmsSend("module.message", root.toString());
+    public void sendAddr(String moduleAddr) {
+        JsonObject addrData = buildAddrData(moduleAddr);
+        template.convertAndSend("module.connect", addrData.toString());
+        log.info("JMS -> {} {}", "module.connect", moduleAddr);
     }
 
-    private JsonObject buildData(String type, String message) {
+    private JsonObject buildMsgData(String type, String text) {
         JsonObject data = new JsonObject();
         data.addProperty("type", type);
-        data.addProperty("text", message);
+        data.addProperty("text", text);
         data.addProperty("createOn", Instant.now().toEpochMilli());
-        return data;
+
+        JsonObject root = new JsonObject();
+        root.addProperty("name", moduleName);
+        root.add("data", data);
+        return root;
     }
 
-    private void jmsSend(String destinationName, String message) {
-        template.convertAndSend(destinationName, message);
-        log.info("JMS -> {} {}", destinationName, message);
+    private JsonObject buildAddrData(String moduleAddr) {
+        JsonObject root = new JsonObject();
+        root.addProperty("name", moduleName);
+        root.addProperty("addr", moduleAddr);
+        return root;
     }
 
 }
