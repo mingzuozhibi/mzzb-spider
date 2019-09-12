@@ -27,7 +27,29 @@ public class DiscSpider {
     @Autowired
     private JmsHelper jmsHelper;
 
-    public Map<String, DiscParser> fetchDiscInfos(List<String> asins) {
+    public DiscParser fetchDisc(String asin) throws Exception {
+        log.info("开始抓取单个碟片[{}]", asin);
+        AtomicReference<DiscParser> discRef = new AtomicReference<>();
+        AtomicReference<Exception> errorRef = new AtomicReference<>();
+        doInSessionFactory(factory -> {
+            try {
+                Document document = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
+                DiscParser parser = new DiscParser(document);
+                log.info("抓取单个碟片成功[{}][{}]", asin, parser);
+                discRef.set(parser);
+            } catch (RuntimeException e) {
+                log.warn("抓取单个碟片失败[{}]", asin);
+                errorRef.set(e);
+            }
+        });
+        if (discRef.get() != null) {
+            return discRef.get();
+        } else {
+            throw errorRef.get();
+        }
+    }
+
+    public Map<String, DiscParser> fetchDiscs(List<String> asins) {
         jmsHelper.sendInfo("扫描日亚排名：准备开始");
         Map<String, DiscParser> discInfos = new HashMap<>();
         AtomicInteger count = new AtomicInteger(0);
@@ -77,28 +99,6 @@ public class DiscSpider {
             jmsHelper.sendInfo(String.format("扫描日亚排名：本次扫描结束(%d/%d)", count.get(), taskCount));
         });
         return discInfos;
-    }
-
-    public DiscParser fetchDisc(String asin) throws Exception {
-        log.info("开始抓取单个碟片[{}]", asin);
-        AtomicReference<DiscParser> discRef = new AtomicReference<>();
-        AtomicReference<Exception> errorRef = new AtomicReference<>();
-        doInSessionFactory(factory -> {
-            try {
-                Document document = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
-                DiscParser parser = new DiscParser(document);
-                log.info("抓取单个碟片成功[{}][{}]", asin, parser);
-                discRef.set(parser);
-            } catch (RuntimeException e) {
-                log.warn("抓取单个碟片失败[{}]", asin);
-                errorRef.set(e);
-            }
-        });
-        if (discRef.get() != null) {
-            return discRef.get();
-        } else {
-            throw errorRef.get();
-        }
     }
 
     private String writeToTempFile(String content) {

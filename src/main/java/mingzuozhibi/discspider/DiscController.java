@@ -39,7 +39,14 @@ public class DiscController extends BaseController {
     public String fetchDisc(@PathVariable String asin) {
         try {
             DiscParser parser = discSpider.fetchDisc(asin);
-            return objectResult(gson.toJsonTree(parser));
+            if (parser.getAsin() == null) {
+                return errorMessage("可能是访问日亚过于频繁，请过段时间再试");
+            }
+            if (parser.getAsin().equals(asin)) {
+                return objectResult(gson.toJsonTree(parser));
+            } else {
+                return errorMessage("ASIN校验未通过：" + gson.toJson(parser));
+            }
         } catch (Exception e) {
             return errorMessage(String.format("抓取碟片失败：%s %s",
                     e.getClass().getSimpleName(), e.getMessage()));
@@ -98,7 +105,7 @@ public class DiscController extends BaseController {
             listOpts.trim("next.update.asins", 1, 0);
             listOpts.rightPushAll("next.update.asins", asins);
             new Thread(() -> {
-                writePrevUpdate(discSpider.fetchDiscInfos(asins), true);
+                writePrevUpdate(discSpider.fetchDiscs(asins), true);
             }).start();
             return objectResult(new JsonPrimitive("full update started"));
         }
@@ -114,7 +121,7 @@ public class DiscController extends BaseController {
             return errorMessage("stop next update: no asins");
         } else {
             new Thread(() -> {
-                writePrevUpdate(discSpider.fetchDiscInfos(asins), false);
+                writePrevUpdate(discSpider.fetchDiscs(asins), false);
             }).start();
             return objectResult(new JsonPrimitive("next update started"));
         }
