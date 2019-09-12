@@ -12,7 +12,6 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -104,9 +103,9 @@ public class DiscController extends BaseController {
         } else {
             listOpts.trim("next.update.asins", 1, 0);
             listOpts.rightPushAll("next.update.asins", asins);
-            new Thread(() -> {
+            runWithDaemon(() -> {
                 writePrevUpdate(discSpider.fetchDiscs(asins), true);
-            }).start();
+            });
             return objectResult(new JsonPrimitive("full update started"));
         }
     }
@@ -120,9 +119,9 @@ public class DiscController extends BaseController {
             jmsHelper.sendWarn("stop next update: no asins");
             return errorMessage("stop next update: no asins");
         } else {
-            new Thread(() -> {
+            runWithDaemon(() -> {
                 writePrevUpdate(discSpider.fetchDiscs(asins), false);
-            }).start();
+            });
             return objectResult(new JsonPrimitive("next update started"));
         }
     }
@@ -163,6 +162,16 @@ public class DiscController extends BaseController {
             jmsHelper.doSend("prev.update.discs", discInfos.toString());
             log.info("JMS -> prev.update.discs size={}", discs.size());
         }
+    }
+
+    private void runWithDaemon(Runnable runnable) {
+        Thread thread = new Thread(runnable);
+        thread.setDaemon(true);
+        thread.setUncaughtExceptionHandler((t, e) -> {
+            jmsHelper.sendWarn(String.format("Thread %s: Exit: %s %s"
+                    , t.getName(), e.getClass().getName(), e.getMessage()));
+        });
+        thread.start();
     }
 
 }
