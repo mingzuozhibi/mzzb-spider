@@ -1,6 +1,7 @@
 package mingzuozhibi.discspider;
 
 import lombok.extern.slf4j.Slf4j;
+import mingzuozhibi.common.jms.JmsMessage;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ import static mingzuozhibi.common.ChromeHelper.waitRequest;
 public class DiscSpider {
 
     @Autowired
-    private JmsHelper jmsHelper;
+    private JmsMessage jmsMessage;
 
     public DiscParser fetchDisc(String asin) throws Exception {
         log.info("开始抓取单个碟片[{}]", asin);
@@ -58,18 +59,18 @@ public class DiscSpider {
     }
 
     public Map<String, DiscParser> fetchDiscs(List<String> asins) {
-        jmsHelper.sendInfo("扫描日亚排名：准备开始");
+        jmsMessage.info("扫描日亚排名：准备开始");
         Map<String, DiscParser> discInfos = new HashMap<>();
         AtomicInteger count = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger();
 
         doInSessionFactory(factory -> {
             int taskCount = asins.size();
-            jmsHelper.sendInfo(String.format("扫描日亚排名：共%d个任务", taskCount));
+            jmsMessage.info(String.format("扫描日亚排名：共%d个任务", taskCount));
 
             for (String asin : asins) {
                 count.incrementAndGet();
-                jmsHelper.sendInfo(String.format("正在抓取(%d/%d)[%s]", count.get(), taskCount, asin));
+                jmsMessage.info(String.format("正在抓取(%d/%d)[%s]", count.get(), taskCount, asin));
 
                 Document document = null;
                 try {
@@ -78,14 +79,14 @@ public class DiscSpider {
                     if (Objects.equals(parser.getAsin(), asin)) {
                         discInfos.put(asin, parser);
                         errorCount.set(0);
-                        jmsHelper.sendInfo(String.format("成功抓取(%d/%d)[%s][rank=%d]",
+                        jmsMessage.info(String.format("成功抓取(%d/%d)[%s][rank=%d]",
                                 count.get(), taskCount, asin, parser.getRank()));
                     } else {
                         if (errorCount.get() >= 5) {
-                            jmsHelper.sendWarn("扫描日亚排名：连续5次未能抓取排名");
+                            jmsMessage.warning("扫描日亚排名：连续5次未能抓取排名");
                             break;
                         } else if (document.outerHtml().contains("api-services-support@amazon.com")) {
-                            jmsHelper.sendWarn("扫描日亚排名：已发现日亚反爬虫系统");
+                            jmsMessage.warning("扫描日亚排名：已发现日亚反爬虫系统");
                         }
                         errorCount.incrementAndGet();
                     }
@@ -93,17 +94,17 @@ public class DiscSpider {
                     if (document != null) {
                         String outerHtml = document.outerHtml();
                         String path = writeToTempFile(outerHtml);
-                        jmsHelper.sendWarn(String.format("抓取中发生了异常：%s %s [file=%s]",
+                        jmsMessage.warning(String.format("抓取中发生了异常：%s %s [file=%s]",
                                 e.getClass().getSimpleName(), e.getMessage(), path));
                     } else {
-                        jmsHelper.sendWarn(String.format("未能成功抓取页面：%s %s",
+                        jmsMessage.warning(String.format("未能成功抓取页面：%s %s",
                                 e.getClass().getSimpleName(), e.getMessage()));
                     }
                     log.warn("抓取中发生了异常", e);
                     errorCount.incrementAndGet();
                 }
             }
-            jmsHelper.sendInfo(String.format("扫描日亚排名：本次扫描结束(%d/%d)", count.get(), taskCount));
+            jmsMessage.info(String.format("扫描日亚排名：本次扫描结束(%d/%d)", count.get(), taskCount));
         });
         return discInfos;
     }

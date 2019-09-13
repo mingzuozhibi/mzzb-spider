@@ -3,9 +3,10 @@ package mingzuozhibi.discspider;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.BaseController;
+import mingzuozhibi.common.jms.JmsMessage;
+import mingzuozhibi.common.jms.JmsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.jms.annotation.JmsListener;
@@ -24,8 +25,9 @@ import java.util.stream.Collectors;
 public class DiscController extends BaseController {
 
     @Autowired
-    private JmsHelper jmsHelper;
-
+    private JmsService jmsService;
+    @Autowired
+    private JmsMessage jmsMessage;
     @Autowired
     private DiscSpider discSpider;
 
@@ -62,67 +64,33 @@ public class DiscController extends BaseController {
         log.info("JMS <- need.update.asins size={}", asins.size());
     }
 
-    @GetMapping("/prevUpdateDiscs")
-    public String prevUpdateDiscs() {
-        List<String> discs = listOpts.range("prev.update.discs", 0, -1);
-        if (discs == null) {
-            jmsHelper.sendWarn("prevUpdateDiscs: no data");
-            return errorMessage("prevUpdateDiscs: no data");
-        } else {
-            JsonArray data = new JsonArray();
-            discs.forEach(json -> {
-                data.add(gson.fromJson(json, JsonObject.class));
-            });
-            return objectResult(data);
-        }
-    }
-
-    @GetMapping("/doneUpdateDiscs")
-    public String doneUpdateDiscs() {
-        List<String> discs = listOpts.range("done.update.discs", 0, -1);
-        if (discs == null) {
-            jmsHelper.sendWarn("doneUpdateDiscs: no data");
-            return errorMessage("doneUpdateDiscs: no data");
-        } else {
-            JsonArray data = new JsonArray();
-            discs.forEach(json -> {
-                data.add(gson.fromJson(json, JsonObject.class));
-            });
-            return objectResult(data);
-        }
-    }
-
     @GetMapping("/startFullUpdate")
     @Scheduled(cron = "0 0 1/6 * * ?")
-    public String startFullUpdate() {
-        jmsHelper.sendInfo("start full update");
+    public void startFullUpdate() {
+        jmsMessage.info("Start Full Update");
         List<String> asins = listOpts.range("need.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
-            jmsHelper.sendWarn("stop full update: no asins");
-            return errorMessage("stop full update: no asins");
+            jmsMessage.warning("Stop Full Update: No Asins");
         } else {
             listOpts.trim("next.update.asins", 1, 0);
             listOpts.rightPushAll("next.update.asins", asins);
             runWithDaemon(() -> {
                 writePrevUpdate(discSpider.fetchDiscs(asins), true);
             });
-            return objectResult(new JsonPrimitive("full update started"));
         }
     }
 
     @GetMapping("/startNextUpdate")
     @Scheduled(cron = "0 0 3/6 * * ?")
-    public String startFetchNextRanks() {
-        jmsHelper.sendInfo("start next update");
+    public void startNextUpdate() {
+        jmsMessage.info("Start Next Update");
         List<String> asins = listOpts.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
-            jmsHelper.sendWarn("stop next update: no asins");
-            return errorMessage("stop next update: no asins");
+            jmsMessage.warning("Stop Next Update: No Asins");
         } else {
             runWithDaemon(() -> {
                 writePrevUpdate(discSpider.fetchDiscs(asins), false);
             });
-            return objectResult(new JsonPrimitive("next update started"));
         }
     }
 
@@ -144,7 +112,7 @@ public class DiscController extends BaseController {
         discInfos.keySet().forEach(asin -> {
             listOpts.remove("next.update.asins", 0, asin);
         });
-        jmsHelper.sendInfo("剩余未抓取碟片数量：" + listOpts.size("next.update.asins"));
+        jmsMessage.info("Next Update Aains: Size = " + listOpts.size("next.update.asins"));
 
         sendPrevUpdateDiscs();
     }
@@ -153,14 +121,29 @@ public class DiscController extends BaseController {
     public void sendPrevUpdateDiscs() {
         List<String> discs = listOpts.range("prev.update.discs", 0, -1);
         if (discs == null) {
-            jmsHelper.sendWarn("sendPrevUpdateDiscs: no data");
+            jmsMessage.warning("sendPrevUpdateDiscs: no data");
         } else {
             JsonArray discInfos = new JsonArray();
             discs.forEach(json -> {
                 discInfos.add(gson.fromJson(json, JsonObject.class));
             });
-            jmsHelper.doSend("prev.update.discs", discInfos.toString());
+            jmsService.sendJson("prev.update.discs", discInfos.toString());
             log.info("JMS -> prev.update.discs size={}", discs.size());
+        }
+    }
+
+    @GetMapping("/sendDoneUpdateDiscs")
+    public void sendDoneUpdateDiscs() {
+        List<String> discs = listOpts.range("done.update.discs", 0, -1);
+        if (discs == null) {
+            jmsMessage.warning("sendDoneUpdateDiscs: no data");
+        } else {
+            JsonArray discInfos = new JsonArray();
+            discs.forEach(json -> {
+                discInfos.add(gson.fromJson(json, JsonObject.class));
+            });
+            jmsService.sendJson("done.update.discs", discInfos.toString());
+            log.info("JMS -> done.update.discs size={}", discs.size());
         }
     }
 
@@ -168,7 +151,7 @@ public class DiscController extends BaseController {
         Thread thread = new Thread(runnable);
         thread.setDaemon(true);
         thread.setUncaughtExceptionHandler((t, e) -> {
-            jmsHelper.sendWarn(String.format("Thread %s: Exit: %s %s"
+            jmsMessage.warning(String.format("Thread %s: Exit: %s %s"
                     , t.getName(), e.getClass().getName(), e.getMessage()));
         });
         thread.start();
