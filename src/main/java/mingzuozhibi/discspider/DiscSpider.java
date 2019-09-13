@@ -1,6 +1,9 @@
 package mingzuozhibi.discspider;
 
 import lombok.extern.slf4j.Slf4j;
+import mingzuozhibi.common.jms.JmsMessage;
+import mingzuozhibi.common.model.Result;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,43 +17,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static mingzuozhibi.common.ChromeHelper.doInSessionFactory;
-import static mingzuozhibi.common.ChromeHelper.waitRequest;
-
+import static mingzuozhibi.common.model.Result.formatErrors;
+import static mingzuozhibi.common.util.ChromeUtils.doInSessionFactory;
+import static mingzuozhibi.common.util.ChromeUtils.waitResult;
 
 @Slf4j
 @Service
 public class DiscSpider {
 
     @Autowired
-    private JmsHelper jmsHelper;
+    private JmsMessage jmsMessage;
 
-    public DiscParser fetchDisc(String asin) throws Exception {
-        log.info("开始抓取单个碟片[{}]", asin);
-        AtomicReference<DiscParser> discRef = new AtomicReference<>();
-        AtomicReference<Exception> errorRef = new AtomicReference<>();
+    public Result<DiscParser> fetchDisc(String asin) {
+        Result<DiscParser> parserResult = new Result<>();
         doInSessionFactory(factory -> {
+            // 抓取
+            Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
+            if (bodyResult.notDone()) {
+                parserResult.setErrorMessage("抓取中遇到错误：" + bodyResult.formatError());
+                return;
+            }
+            // 解析
             try {
-                Document document = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
+                Document document = Jsoup.parseBodyFragment(bodyResult.getContent());
                 DiscParser parser = new DiscParser(document);
-                log.info("抓取单个碟片成功[{}][{}]", asin, parser);
-                if (parser.getAsin() != null) {
-                    discRef.set(parser);
+                if (Objects.equals(parser.getAsin(), asin)) {
+                    parserResult.setContent(parser);
                 } else if (hasAmazonNoSpider(document)) {
-                    errorRef.set(new Exception("已发现日亚反爬虫系统"));
+                    parserResult.setErrorMessage("已发现日亚反爬虫系统，可能是查询过于频繁");
+                } else {
+                    parserResult.setErrorMessage("ASIN校验未通过：" + parser);
                 }
-            } catch (RuntimeException e) {
-                log.warn("抓取单个碟片失败[{}]", asin);
-                errorRef.set(e);
+            } catch (Exception e) {
+                parserResult.setErrorMessage("解析中发生错误：" + formatErrors(e));
+                recordErrorContent(asin, bodyResult.getContent());
             }
         });
-        if (discRef.get() != null) {
-            return discRef.get();
-        } else {
-            throw errorRef.get();
-        }
+        return parserResult;
     }
 
     private boolean hasAmazonNoSpider(Document document) {
@@ -58,54 +62,75 @@ public class DiscSpider {
     }
 
     public Map<String, DiscParser> fetchDiscs(List<String> asins) {
-        jmsHelper.sendInfo("扫描日亚排名：准备开始");
+        jmsMessage.notify("扫描日亚排名：准备开始");
         Map<String, DiscParser> discInfos = new HashMap<>();
-        AtomicInteger count = new AtomicInteger(0);
+        AtomicInteger fetchCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger();
 
         doInSessionFactory(factory -> {
             int taskCount = asins.size();
-            jmsHelper.sendInfo(String.format("扫描日亚排名：共%d个任务", taskCount));
+            jmsMessage.info(String.format("扫描日亚排名：共%d个任务", taskCount));
 
             for (String asin : asins) {
-                count.incrementAndGet();
-                jmsHelper.sendInfo(String.format("正在抓取(%d/%d)[%s]", count.get(), taskCount, asin));
 
-                Document document = null;
+                if (checkBreak(fetchCount, errorCount)) break;
+
+                // 抓取
+                jmsMessage.info(String.format("正在抓取(%d/%d)[%s]", fetchCount.get(), taskCount, asin));
+                Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
+                if (bodyResult.notDone()) {
+                    jmsMessage.warning("抓取中遇到错误：" + bodyResult.formatError());
+                    errorCount.incrementAndGet();
+                    continue;
+                }
+
+                // 解析
                 try {
-                    document = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
+                    Document document = Jsoup.parseBodyFragment(bodyResult.getContent());
                     DiscParser parser = new DiscParser(document);
+
                     if (Objects.equals(parser.getAsin(), asin)) {
+                        jmsMessage.info(String.format("成功抓取(%d/%d)[%s][rank=%d]",
+                            fetchCount.get(), taskCount, asin, parser.getRank()));
                         discInfos.put(asin, parser);
                         errorCount.set(0);
-                        jmsHelper.sendInfo(String.format("成功抓取(%d/%d)[%s][rank=%d]",
-                                count.get(), taskCount, asin, parser.getRank()));
+                    } else if (hasAmazonNoSpider(document)) {
+                        jmsMessage.warning("扫描日亚排名：已发现日亚反爬虫系统");
+                        errorCount.incrementAndGet();
                     } else {
-                        if (errorCount.get() >= 5) {
-                            jmsHelper.sendWarn("扫描日亚排名：连续5次未能抓取排名");
-                            break;
-                        } else if (document.outerHtml().contains("api-services-support@amazon.com")) {
-                            jmsHelper.sendWarn("扫描日亚排名：已发现日亚反爬虫系统");
-                        }
+                        jmsMessage.warning("扫描日亚排名：ASIN校验未通过：" + parser);
                         errorCount.incrementAndGet();
                     }
                 } catch (Exception e) {
-                    if (document != null) {
-                        String outerHtml = document.outerHtml();
-                        String path = writeToTempFile(outerHtml);
-                        jmsHelper.sendWarn(String.format("抓取中发生了异常：%s %s [file=%s]",
-                                e.getClass().getSimpleName(), e.getMessage(), path));
-                    } else {
-                        jmsHelper.sendWarn(String.format("未能成功抓取页面：%s %s",
-                                e.getClass().getSimpleName(), e.getMessage()));
-                    }
-                    log.warn("抓取中发生了异常", e);
+                    jmsMessage.warning("解析中发生错误：" + formatErrors(e));
+                    recordErrorContent(asin, bodyResult.getContent());
                     errorCount.incrementAndGet();
                 }
+
             }
-            jmsHelper.sendInfo(String.format("扫描日亚排名：本次扫描结束(%d/%d)", count.get(), taskCount));
+            int doneCount = discInfos.size();
+            jmsMessage.info(String.format("扫描日亚排名：本次共%d个任务，抓取了%d个，成功获得排名%d个",
+                taskCount, fetchCount.get(), doneCount));
+            jmsMessage.info(String.format("扫描日亚排名：抓取中失败%d个，%d个未抓取，下次还应抓取%d个",
+                fetchCount.get() - doneCount, taskCount - fetchCount.get(), taskCount - doneCount));
         });
+        jmsMessage.notify("扫描日亚排名：扫描结束");
         return discInfos;
+    }
+
+    private boolean checkBreak(AtomicInteger fetchCount, AtomicInteger errorCount) {
+        if (errorCount.get() >= 5) {
+            jmsMessage.warning("扫描日亚排名：连续5次发生错误");
+            return true;
+        } else {
+            fetchCount.incrementAndGet();
+        }
+        return false;
+    }
+
+    private void recordErrorContent(String asin, String outerHtml) {
+        String path = writeToTempFile(outerHtml);
+        log.warn("解析中发生错误：Asin={}, file={}", asin, path);
     }
 
     private String writeToTempFile(String content) {
