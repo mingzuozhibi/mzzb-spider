@@ -6,8 +6,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = "mingzuozhibi")
-public class MzzbSpiderApplication {
+public class MzzbDiscSpiderApplication {
     public static void main(String[] args) {
-        SpringApplication.run(MzzbSpiderApplication.class, args);
+        SpringApplication.run(MzzbDiscSpiderApplication.class, args);
     }
 }

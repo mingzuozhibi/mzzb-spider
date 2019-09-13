@@ -82,9 +82,9 @@ public class DiscParser {
             Matcher matcher = pattern.matcher(element.text());
             if (matcher.find()) {
                 String date = LocalDate.of(
-                        Integer.parseInt(matcher.group("year")),
-                        Integer.parseInt(matcher.group("month")),
-                        Integer.parseInt(matcher.group("dom"))
+                    Integer.parseInt(matcher.group("year")),
+                    Integer.parseInt(matcher.group("month")),
+                    Integer.parseInt(matcher.group("dom"))
                 ).format(formatter);
                 if (type.equals("Cd") && element.text().contains("CD")) {
                     return date;
