@@ -111,8 +111,6 @@ public class DiscSpider {
             int doneCount = discInfos.size();
             jmsMessage.info(String.format("扫描日亚排名：本次共%d个任务，抓取了%d个，成功获得排名%d个",
                 taskCount, fetchCount.get(), doneCount));
-            jmsMessage.info(String.format("扫描日亚排名：抓取中失败%d个，%d个未抓取，下次还应抓取%d个",
-                fetchCount.get() - doneCount, taskCount - fetchCount.get(), taskCount - doneCount));
         });
         jmsMessage.notify("扫描日亚排名：扫描结束");
         return discInfos;
