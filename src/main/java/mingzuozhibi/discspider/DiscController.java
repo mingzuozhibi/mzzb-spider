@@ -31,7 +31,7 @@ public class DiscController extends BaseController {
     @GetMapping("/fetchDisc/{asin}")
     public String fetchDisc(@PathVariable String asin) {
         String prefix = "[" + asin + "]";
-        jmsMessage.notify(prefix + "开始手动抓取碟片");
+        jmsMessage.info(prefix + "开始手动抓取碟片");
         Result<DiscParser> result = discSpider.fetchDisc(asin);
         if (result.notDone()) {
             String errorMessage = result.formatError();
@@ -39,7 +39,7 @@ public class DiscController extends BaseController {
             return errorMessage(errorMessage);
         }
         JsonElement discInfo = gson.toJsonTree(result.getContent());
-        jmsMessage.success(prefix + "手动抓取碟片成功：" + discInfo.toString());
+        jmsMessage.info(prefix + "手动抓取碟片成功：" + discInfo.toString());
         return objectResult(discInfo);
     }
 
