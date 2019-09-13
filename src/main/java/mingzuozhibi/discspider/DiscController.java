@@ -5,7 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import mingzuozhibi.common.BaseController;
 import mingzuozhibi.common.jms.JmsMessage;
-import mingzuozhibi.discspider.util.Result;
+import mingzuozhibi.common.model.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.jms.annotation.JmsListener;

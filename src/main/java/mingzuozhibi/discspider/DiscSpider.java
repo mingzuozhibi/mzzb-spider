@@ -2,7 +2,7 @@ package mingzuozhibi.discspider;
 
 import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.jms.JmsMessage;
-import mingzuozhibi.discspider.util.Result;
+import mingzuozhibi.common.model.Result;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static mingzuozhibi.discspider.util.ChromeUtils.doInSessionFactory;
-import static mingzuozhibi.discspider.util.ChromeUtils.waitRequest;
-import static mingzuozhibi.discspider.util.Result.formatErrors;
+import static mingzuozhibi.common.model.Result.formatErrors;
+import static mingzuozhibi.common.util.ChromeUtils.doInSessionFactory;
+import static mingzuozhibi.common.util.ChromeUtils.waitResult;
 
 @Slf4j
 @Service
@@ -33,7 +33,7 @@ public class DiscSpider {
         Result<DiscParser> parserResult = new Result<>();
         doInSessionFactory(factory -> {
             // 抓取
-            Result<String> bodyResult = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
+            Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
             if (bodyResult.notDone()) {
                 parserResult.setErrorMessage("抓取中遇到错误：" + bodyResult.formatError());
                 return;
@@ -77,7 +77,7 @@ public class DiscSpider {
 
                 // 抓取
                 jmsMessage.info(String.format("正在抓取(%d/%d)[%s]", fetchCount.get(), taskCount, asin));
-                Result<String> bodyResult = waitRequest(factory, "https://www.amazon.co.jp/dp/" + asin);
+                Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
                 if (bodyResult.notDone()) {
                     jmsMessage.warning("抓取中遇到错误：" + bodyResult.formatError());
                     errorCount.incrementAndGet();
