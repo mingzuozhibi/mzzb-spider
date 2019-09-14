@@ -2,6 +2,7 @@ package mingzuozhibi.discspider;
 
 import lombok.Getter;
 import lombok.ToString;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
@@ -20,7 +21,8 @@ public class DiscParser {
     private String asin;
     private Integer rank;
 
-    public DiscParser(Document document) {
+    public DiscParser(String content) {
+        Document document = Jsoup.parseBodyFragment(content);
         this.title = parseTitle(document);
         this.type = parseType(document);
         this.date = parseDate(document);

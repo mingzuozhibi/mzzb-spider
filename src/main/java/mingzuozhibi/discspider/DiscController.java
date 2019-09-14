@@ -2,10 +2,8 @@ package mingzuozhibi.discspider;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import mingzuozhibi.common.BaseController;
 import mingzuozhibi.common.jms.JmsMessage;
-import mingzuozhibi.common.model.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.jms.annotation.JmsListener;
@@ -14,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 
 @RestController
 public class DiscController extends BaseController {
@@ -30,17 +29,12 @@ public class DiscController extends BaseController {
 
     @GetMapping("/fetchDisc/{asin}")
     public String fetchDisc(@PathVariable String asin) {
-        String prefix = "[" + asin + "]";
-        jmsMessage.notify(prefix + "开始手动抓取碟片");
-        Result<DiscParser> result = discSpider.fetchDisc(asin);
-        if (result.notDone()) {
-            String errorMessage = result.formatError();
-            jmsMessage.warning(prefix + "手动抓取碟片失败：" + errorMessage);
-            return errorMessage(errorMessage);
-        }
-        JsonElement discInfo = gson.toJsonTree(result.getContent());
-        jmsMessage.success(prefix + "手动抓取碟片成功：" + discInfo.toString());
-        return objectResult(discInfo);
+        return discSpider.updateDiscs(Collections.singletonList(asin))
+            .values()
+            .stream()
+            .map(parser -> objectResult(gson.toJsonTree(parser)))
+            .findFirst()
+            .orElseGet(() -> errorMessage("未能抓取碟片数据"));
     }
 
     @JmsListener(destination = "need.update.asins")
