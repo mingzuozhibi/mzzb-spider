@@ -7,7 +7,7 @@ import mingzuozhibi.common.spider.SpiderRecorder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,15 +22,27 @@ public class DiscSpider {
     @Autowired
     private JmsMessage jmsMessage;
 
+    public Result<DiscParser> updateDisc(String asin) {
+        SpiderRecorder recorder = new SpiderRecorder("碟片信息", 1, jmsMessage);
+        Result<DiscParser> result = new Result<>();
+        doInSessionFactory(factory -> {
+            result.syncResult(doUpdateDisc(factory, recorder, asin));
+        });
+        return result;
+    }
+
     public Map<String, DiscParser> updateDiscs(List<String> asins) {
-        SpiderRecorder recorder = new SpiderRecorder("amazon disc data", asins.size(), jmsMessage);
+        SpiderRecorder recorder = new SpiderRecorder("日亚排名", asins.size(), jmsMessage);
         recorder.jmsStartUpdate();
 
-        Map<String, DiscParser> discInfos = new HashMap<>();
+        Map<String, DiscParser> discInfos = new LinkedHashMap<>();
         doInSessionFactory(factory -> {
             for (String asin : asins) {
                 if (recorder.checkBreakCount(5)) break;
-                updateRow(factory, recorder, discInfos, asin);
+                Result<DiscParser> result = doUpdateDisc(factory, recorder, asin);
+                if (!result.isUnfinished()) {
+                    discInfos.put(asin, result.getContent());
+                }
             }
         });
 
@@ -39,30 +51,33 @@ public class DiscSpider {
         return discInfos;
     }
 
-    private void updateRow(SessionFactory factory, SpiderRecorder recorder, Map<String, DiscParser> discInfos, String asin) {
+    @SuppressWarnings("unchecked")
+    private Result<DiscParser> doUpdateDisc(SessionFactory factory, SpiderRecorder recorder, String asin) {
         recorder.jmsStartUpdateRow(asin);
 
         Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
-        if (recorder.checkUnfinished(bodyResult, asin)) {
-            return;
+        if (recorder.checkUnfinished(bodyResult)) {
+            return Result.ofErrorMessage(bodyResult.formatError());
         }
 
         String content = bodyResult.getContent();
         try {
             DiscParser parser = new DiscParser(content);
-
             if (Objects.equals(parser.getAsin(), asin)) {
-                recorder.jmsSuccessRow(String.format("[%s][rank=%d]", asin, parser.getRank()));
-                discInfos.put(asin, parser);
+                recorder.jmsSuccessRow(asin, "rank=" + parser.getRank());
+                return Result.ofContent(parser);
             } else if (hasAmazonNoSpider(content)) {
-                recorder.jmsFailedRow("There seems to be an anti-robot system");
+                recorder.jmsFailedRow("发现日亚反爬虫系统");
+                return Result.ofErrorMessage("发现日亚反爬虫系统");
             } else {
-                recorder.jmsFailedRow("Data does not match the format: " + parser.toString());
                 writeContent(content, asin);
+                recorder.jmsFailedRow("页面数据未通过校验");
+                return Result.ofErrorMessage("页面数据未通过校验");
             }
         } catch (Exception e) {
             recorder.jmsErrorRow(e);
             writeContent(content, asin);
+            return Result.ofExceptions(e);
         }
     }
 
