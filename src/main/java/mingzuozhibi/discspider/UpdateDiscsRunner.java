@@ -74,7 +74,7 @@ public class UpdateDiscsRunner extends BaseController {
             if (fullUpdate) {
                 resetNextAsins(asins);
             }
-            Map<String, DiscParser> discInfos = discSpider.fetchDiscs(asins);
+            Map<String, DiscParser> discInfos = discSpider.updateDiscs(asins);
             List<String> updatedDiscs = buildUpdatedDiscs(discInfos);
             updateDiscsWriter.writeUpdateDiscs(updatedDiscs, fullUpdate);
             updateDiscsSender.sendPrevUpdateDiscs();
