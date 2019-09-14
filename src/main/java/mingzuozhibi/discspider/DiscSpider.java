@@ -58,6 +58,7 @@ public class DiscSpider {
                 recorder.jmsFailedRow("There seems to be an anti-robot system");
             } else {
                 recorder.jmsFailedRow("Data does not match the format: " + parser.toString());
+                writeContent(content, asin);
             }
         } catch (Exception e) {
             recorder.jmsErrorRow(e);
