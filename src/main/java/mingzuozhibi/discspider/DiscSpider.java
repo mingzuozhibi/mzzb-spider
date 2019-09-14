@@ -3,6 +3,7 @@ package mingzuozhibi.discspider;
 import io.webfolder.cdp.session.SessionFactory;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
+import mingzuozhibi.common.spider.SpiderRecorder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static mingzuozhibi.common.util.ChromeUtils.doInSessionFactory;
-import static mingzuozhibi.common.util.ChromeUtils.waitResult;
-import static mingzuozhibi.discspider.SpiderRecorder.writeContent;
+import static mingzuozhibi.common.spider.SpiderCdp4j.doInSessionFactory;
+import static mingzuozhibi.common.spider.SpiderCdp4j.waitResult;
+import static mingzuozhibi.common.spider.SpiderRecorder.writeContent;
 
 @Service
 public class DiscSpider {
