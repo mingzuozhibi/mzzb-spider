@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static mingzuozhibi.common.util.ThreadUtils.runWithDaemon;
+
 @Slf4j
 @RestController
 public class UpdateDiscsRunner extends BaseController {
@@ -70,7 +72,7 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     private void runFetchDiscs(List<String> asins, boolean fullUpdate) {
-        runWithDaemon(() -> {
+        runWithDaemon(jmsMessage, "runFetchDiscs: fullUpdate=" + fullUpdate, () -> {
             if (fullUpdate) {
                 resetNextAsins(asins);
             }
@@ -105,16 +107,6 @@ public class UpdateDiscsRunner extends BaseController {
         updatedAsins.forEach(asin -> {
             listOpts.remove("next.update.asins", 0, asin);
         });
-    }
-
-    private void runWithDaemon(Runnable runnable) {
-        Thread thread = new Thread(runnable);
-        thread.setDaemon(true);
-        thread.setUncaughtExceptionHandler((t, e) -> {
-            jmsMessage.warning(String.format("Thread %s: Exit: %s %s"
-                , t.getName(), e.getClass().getName(), e.getMessage()));
-        });
-        thread.start();
     }
 
 }
