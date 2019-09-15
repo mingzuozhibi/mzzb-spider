@@ -38,7 +38,7 @@ public class UpdateDiscsRunner extends BaseController {
     private AtomicBoolean running = new AtomicBoolean(false);
 
     @GetMapping("/startFullUpdate")
-    @Scheduled(cron = "0 0 1/6 * * ?")
+    @Scheduled(cron = "0 2 1/4 * * ?")
     public void startFullUpdate() {
         jmsMessage.notify("计划任务：开始全量更新");
         if (!running.compareAndSet(false, true)) {
@@ -54,7 +54,7 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     @GetMapping("/startNextUpdate")
-    @Scheduled(cron = "0 0 3/6 * * ?")
+    @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
         jmsMessage.info("计划任务：开始补充更新");
         if (!running.compareAndSet(false, true)) {
@@ -84,10 +84,10 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     private void sendRedisDatabaseStatus() {
-        jmsMessage.info("Need Update Asins: Size = " + listOpts.size("need.update.asins"));
-        jmsMessage.info("Done Update Discs: Size = " + listOpts.size("done.update.discs"));
-        jmsMessage.info("Prev Update Discs: Size = " + listOpts.size("prev.update.discs"));
-        jmsMessage.info("Next Update Asins: Size = " + listOpts.size("next.update.asins"));
+        jmsMessage.notify("Need Update Asins: Size = " + listOpts.size("need.update.asins"));
+        jmsMessage.notify("Done Update Discs: Size = " + listOpts.size("done.update.discs"));
+        jmsMessage.notify("Prev Update Discs: Size = " + listOpts.size("prev.update.discs"));
+        jmsMessage.notify("Next Update Asins: Size = " + listOpts.size("next.update.asins"));
     }
 
     private List<String> buildUpdatedDiscs(Map<String, DiscParser> discInfos) {
