@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static mingzuozhibi.common.util.ThreadUtils.runWithDaemon;
+
 @Slf4j
 @RestController
 public class UpdateDiscsRunner extends BaseController {
@@ -38,15 +40,15 @@ public class UpdateDiscsRunner extends BaseController {
     private AtomicBoolean running = new AtomicBoolean(false);
 
     @GetMapping("/startFullUpdate")
-    @Scheduled(cron = "0 0 1/6 * * ?")
+    @Scheduled(cron = "0 2 1/4 * * ?")
     public void startFullUpdate() {
-        jmsMessage.info("Start Full Update");
+        jmsMessage.notify("计划任务：开始全量更新");
         if (!running.compareAndSet(false, true)) {
-            jmsMessage.warning("Stop Full Update: Has Other Update");
+            jmsMessage.warning("任务终止：已有其他更新");
         }
         List<String> asins = listOpts.range("need.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
-            jmsMessage.warning("Stop Full Update: No Asins");
+            jmsMessage.warning("任务终止：无可更新数据");
         } else {
             runFetchDiscs(asins, true);
         }
@@ -54,15 +56,15 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     @GetMapping("/startNextUpdate")
-    @Scheduled(cron = "0 0 3/6 * * ?")
+    @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
-        jmsMessage.info("Start Next Update");
+        jmsMessage.info("计划任务：开始补充更新");
         if (!running.compareAndSet(false, true)) {
-            jmsMessage.warning("Stop Next Update: Has Other Update");
+            jmsMessage.warning("任务终止：已有其他更新");
         }
         List<String> asins = listOpts.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
-            jmsMessage.warning("Stop Next Update: No Asins");
+            jmsMessage.warning("任务终止：无可更新数据");
         } else {
             runFetchDiscs(asins, false);
         }
@@ -70,7 +72,7 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     private void runFetchDiscs(List<String> asins, boolean fullUpdate) {
-        runWithDaemon(() -> {
+        runWithDaemon(jmsMessage, "runFetchDiscs: fullUpdate=" + fullUpdate, () -> {
             if (fullUpdate) {
                 resetNextAsins(asins);
             }
@@ -79,11 +81,15 @@ public class UpdateDiscsRunner extends BaseController {
             updateDiscsWriter.writeUpdateDiscs(updatedDiscs, fullUpdate);
             updateDiscsSender.sendPrevUpdateDiscs();
             cleanNextAsins(discInfos.keySet());
-            jmsMessage.info("Need Update Asins: Size = " + listOpts.size("need.update.asins"));
-            jmsMessage.info("Done Update Discs: Size = " + listOpts.size("done.update.discs"));
-            jmsMessage.info("Prev Update Discs: Size = " + listOpts.size("prev.update.discs"));
-            jmsMessage.info("Next Update Asins: Size = " + listOpts.size("next.update.asins"));
+            sendRedisDatabaseStatus();
         });
+    }
+
+    private void sendRedisDatabaseStatus() {
+        jmsMessage.notify("Need Update Asins: Size = " + listOpts.size("need.update.asins"));
+        jmsMessage.notify("Done Update Discs: Size = " + listOpts.size("done.update.discs"));
+        jmsMessage.notify("Prev Update Discs: Size = " + listOpts.size("prev.update.discs"));
+        jmsMessage.notify("Next Update Asins: Size = " + listOpts.size("next.update.asins"));
     }
 
     private List<String> buildUpdatedDiscs(Map<String, DiscParser> discInfos) {
@@ -101,16 +107,6 @@ public class UpdateDiscsRunner extends BaseController {
         updatedAsins.forEach(asin -> {
             listOpts.remove("next.update.asins", 0, asin);
         });
-    }
-
-    private void runWithDaemon(Runnable runnable) {
-        Thread thread = new Thread(runnable);
-        thread.setDaemon(true);
-        thread.setUncaughtExceptionHandler((t, e) -> {
-            jmsMessage.warning(String.format("Thread %s: Exit: %s %s"
-                , t.getName(), e.getClass().getName(), e.getMessage()));
-        });
-        thread.start();
     }
 
 }
