@@ -5,8 +5,10 @@ import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
 import mingzuozhibi.common.spider.SpiderRecorder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,9 @@ public class DiscSpider {
 
     @Autowired
     private JmsMessage jmsMessage;
+
+    @Resource(name = "redisTemplate")
+    private HashOperations<String, String, String> hashOps;
 
     public Result<DiscParser> updateDisc(String asin) {
         SpiderRecorder recorder = new SpiderRecorder("碟片信息", 1, jmsMessage);
@@ -64,7 +69,8 @@ public class DiscSpider {
         try {
             DiscParser parser = new DiscParser(content);
             if (Objects.equals(parser.getAsin(), asin)) {
-                recorder.jmsSuccessRow(asin, "rank=" + parser.getRank());
+                String rank = hashOps.get("asin.rank.hash", asin);
+                recorder.jmsSuccessRow(asin, String.format("%s => %d", String.valueOf(rank), parser.getRank()));
                 return Result.ofContent(parser);
             } else if (hasAmazonNoSpider(content)) {
                 recorder.jmsFailedRow("发现日亚反爬虫系统");
