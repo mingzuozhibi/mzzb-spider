@@ -25,7 +25,7 @@ public class DiscSpider {
     private JmsMessage jmsMessage;
 
     @Resource(name = "redisTemplate")
-    private HashOperations<String, String, String> hashOps;
+    private HashOperations<String, String, Integer> hashOps;
 
     public Result<DiscParser> updateDisc(String asin) {
         SpiderRecorder recorder = new SpiderRecorder("碟片信息", 1, jmsMessage);
@@ -69,8 +69,9 @@ public class DiscSpider {
         try {
             DiscParser parser = new DiscParser(content);
             if (Objects.equals(parser.getAsin(), asin)) {
-                String rank = hashOps.get("asin.rank.hash", asin);
-                recorder.jmsSuccessRow(asin, String.format("%s => %d", String.valueOf(rank), parser.getRank()));
+                Integer prevRank = hashOps.get("asin.rank.hash", asin);
+                Integer thisRank = parser.getRank();
+                recorder.jmsSuccessRow(asin, prevRank + " => " + thisRank);
                 return Result.ofContent(parser);
             } else if (hasAmazonNoSpider(content)) {
                 recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");

@@ -38,7 +38,7 @@ public class UpdateDiscsRunner extends BaseController {
     private ListOperations<String, String> listOps;
 
     @Resource(name = "redisTemplate")
-    private HashOperations<String, String, String> hashOps;
+    private HashOperations<String, String, Integer> hashOps;
 
     private Gson gson = new Gson();
 
@@ -100,7 +100,7 @@ public class UpdateDiscsRunner extends BaseController {
             JsonObject disc = gson.fromJson(json, JsonObject.class);
             String asin = disc.get("asin").getAsString();
             if (disc.has("rank")) {
-                String rank = disc.get("rank").getAsString();
+                int rank = disc.get("rank").getAsInt();
                 hashOps.put("asin.rank.hash", asin, rank);
             } else {
                 hashOps.delete("asin.rank.hash", asin);
