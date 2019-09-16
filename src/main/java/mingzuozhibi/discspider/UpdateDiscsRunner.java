@@ -58,13 +58,13 @@ public class UpdateDiscsRunner extends BaseController {
     @GetMapping("/startNextUpdate")
     @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
-        jmsMessage.info("计划任务：开始补充更新");
+        jmsMessage.notify("计划任务：开始补充更新");
         if (!running.compareAndSet(false, true)) {
             jmsMessage.warning("任务终止：已有其他更新");
         }
         List<String> asins = listOpts.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
-            jmsMessage.warning("任务终止：无可更新数据");
+            jmsMessage.notify("任务终止：无可更新数据");
         } else {
             runFetchDiscs(asins, false);
         }
