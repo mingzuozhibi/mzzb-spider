@@ -58,13 +58,13 @@ public class UpdateDiscsRunner extends BaseController {
     @GetMapping("/startNextUpdate")
     @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
-        jmsMessage.info("计划任务：开始补充更新");
+        jmsMessage.notify("计划任务：开始补充更新");
         if (!running.compareAndSet(false, true)) {
             jmsMessage.warning("任务终止：已有其他更新");
         }
         List<String> asins = listOpts.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
-            jmsMessage.warning("任务终止：无可更新数据");
+            jmsMessage.notify("任务终止：无可更新数据");
         } else {
             runFetchDiscs(asins, false);
         }
@@ -81,15 +81,7 @@ public class UpdateDiscsRunner extends BaseController {
             updateDiscsWriter.writeUpdateDiscs(updatedDiscs, fullUpdate);
             updateDiscsSender.sendPrevUpdateDiscs();
             cleanNextAsins(discInfos.keySet());
-            sendRedisDatabaseStatus();
         });
-    }
-
-    private void sendRedisDatabaseStatus() {
-        jmsMessage.notify("Need Update Asins: Size = " + listOpts.size("need.update.asins"));
-        jmsMessage.notify("Done Update Discs: Size = " + listOpts.size("done.update.discs"));
-        jmsMessage.notify("Prev Update Discs: Size = " + listOpts.size("prev.update.discs"));
-        jmsMessage.notify("Next Update Asins: Size = " + listOpts.size("next.update.asins"));
     }
 
     private List<String> buildUpdatedDiscs(Map<String, DiscParser> discInfos) {
