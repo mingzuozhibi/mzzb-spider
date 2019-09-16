@@ -81,15 +81,7 @@ public class UpdateDiscsRunner extends BaseController {
             updateDiscsWriter.writeUpdateDiscs(updatedDiscs, fullUpdate);
             updateDiscsSender.sendPrevUpdateDiscs();
             cleanNextAsins(discInfos.keySet());
-            sendRedisDatabaseStatus();
         });
-    }
-
-    private void sendRedisDatabaseStatus() {
-        jmsMessage.notify("Need Update Asins: Size = " + listOpts.size("need.update.asins"));
-        jmsMessage.notify("Done Update Discs: Size = " + listOpts.size("done.update.discs"));
-        jmsMessage.notify("Prev Update Discs: Size = " + listOpts.size("prev.update.discs"));
-        jmsMessage.notify("Next Update Asins: Size = " + listOpts.size("next.update.asins"));
     }
 
     private List<String> buildUpdatedDiscs(Map<String, DiscParser> discInfos) {
