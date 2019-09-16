@@ -61,7 +61,7 @@ public class DiscSpider {
         recorder.jmsStartUpdateRow(asin);
 
         Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
-        if (recorder.checkUnfinished(bodyResult)) {
+        if (recorder.checkUnfinished(asin, bodyResult)) {
             return Result.ofErrorMessage(bodyResult.formatError());
         }
 
@@ -73,15 +73,15 @@ public class DiscSpider {
                 recorder.jmsSuccessRow(asin, String.format("%s => %d", String.valueOf(rank), parser.getRank()));
                 return Result.ofContent(parser);
             } else if (hasAmazonNoSpider(content)) {
-                recorder.jmsFailedRow("发现日亚反爬虫系统");
+                recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
                 return Result.ofErrorMessage("发现日亚反爬虫系统");
             } else {
                 writeContent(content, asin);
-                recorder.jmsFailedRow("页面数据未通过校验");
+                recorder.jmsFailedRow(asin, "页面数据未通过校验");
                 return Result.ofErrorMessage("页面数据未通过校验");
             }
         } catch (Exception e) {
-            recorder.jmsErrorRow(e);
+            recorder.jmsErrorRow(asin, e);
             writeContent(content, asin);
             return Result.ofExceptions(e);
         }
