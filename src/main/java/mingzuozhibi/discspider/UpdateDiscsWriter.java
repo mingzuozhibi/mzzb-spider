@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class UpdateDiscsWriter {
@@ -17,7 +19,11 @@ public class UpdateDiscsWriter {
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
 
-    public void writeUpdateDiscs(List<String> updatedDiscs, boolean fullUpdate) {
+    public void writeUpdateDiscs(Map<String, DiscParser> discInfos, boolean fullUpdate) {
+        List<String> updatedDiscs = discInfos.values().stream()
+            .map(gson::toJson)
+            .collect(Collectors.toList());
+
         writeHistory(updatedDiscs);
 
         cleanPrevDiscs(fullUpdate);
@@ -28,8 +34,9 @@ public class UpdateDiscsWriter {
     private void writeHistory(List<String> updatedDiscs) {
         JsonObject history = new JsonObject();
         history.addProperty("date", LocalDateTime.now().toString());
-        history.add("data", gson.toJsonTree(updatedDiscs));
+        history.add("updatedDiscs", gson.toJsonTree(updatedDiscs));
         listOpts.leftPush("history.update.discs", history.toString());
+        listOpts.trim("history.update.discs", 0, 99);
     }
 
     private void cleanPrevDiscs(boolean fullUpdate) {

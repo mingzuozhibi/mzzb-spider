@@ -12,7 +12,7 @@
 
     <groupId>mingzuozhibi</groupId>
     <artifactId>mzzb-disc-spider</artifactId>
-    <version>0.2.5</version>
+    <version>0.2.6</version>
 
     <name>Mzzb Disc Spider</name>
     <description>Disc Spider For Mingzuozhibi.com</description>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.mingzuozhibi</groupId>
             <artifactId>mzzb-common</artifactId>
-            <version>0.3.1</version>
+            <version>0.3.2</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -71,11 +71,6 @@
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

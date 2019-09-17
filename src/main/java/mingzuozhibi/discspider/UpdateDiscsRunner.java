@@ -1,10 +1,12 @@
 package mingzuozhibi.discspider;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.BaseController;
 import mingzuozhibi.common.jms.JmsMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static mingzuozhibi.common.util.ThreadUtils.runWithDaemon;
 
@@ -33,7 +35,10 @@ public class UpdateDiscsRunner extends BaseController {
     private UpdateDiscsSender updateDiscsSender;
 
     @Resource(name = "redisTemplate")
-    private ListOperations<String, String> listOpts;
+    private ListOperations<String, String> listOps;
+
+    @Resource(name = "redisTemplate")
+    private HashOperations<String, String, Integer> hashOps;
 
     private Gson gson = new Gson();
 
@@ -46,7 +51,7 @@ public class UpdateDiscsRunner extends BaseController {
         if (!running.compareAndSet(false, true)) {
             jmsMessage.warning("任务终止：已有其他更新");
         }
-        List<String> asins = listOpts.range("need.update.asins", 0, -1);
+        List<String> asins = listOps.range("need.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
             jmsMessage.warning("任务终止：无可更新数据");
         } else {
@@ -62,7 +67,7 @@ public class UpdateDiscsRunner extends BaseController {
         if (!running.compareAndSet(false, true)) {
             jmsMessage.warning("任务终止：已有其他更新");
         }
-        List<String> asins = listOpts.range("next.update.asins", 0, -1);
+        List<String> asins = listOps.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
             jmsMessage.notify("任务终止：无可更新数据");
         } else {
@@ -74,30 +79,38 @@ public class UpdateDiscsRunner extends BaseController {
     private void runFetchDiscs(List<String> asins, boolean fullUpdate) {
         runWithDaemon(jmsMessage, "runFetchDiscs: fullUpdate=" + fullUpdate, () -> {
             if (fullUpdate) {
-                resetNextAsins(asins);
+                resetNextUpdateAsins(asins);
+                writeAsinRankHash();
             }
             Map<String, DiscParser> discInfos = discSpider.updateDiscs(asins);
-            List<String> updatedDiscs = buildUpdatedDiscs(discInfos);
-            updateDiscsWriter.writeUpdateDiscs(updatedDiscs, fullUpdate);
+            updateDiscsWriter.writeUpdateDiscs(discInfos, fullUpdate);
             updateDiscsSender.sendPrevUpdateDiscs();
-            cleanNextAsins(discInfos.keySet());
+            cleanNextUpdateAsins(discInfos.keySet());
         });
     }
 
-    private List<String> buildUpdatedDiscs(Map<String, DiscParser> discInfos) {
-        return discInfos.values().stream()
-            .map(gson::toJson)
-            .collect(Collectors.toList());
+    private void resetNextUpdateAsins(List<String> asins) {
+        listOps.trim("next.update.asins", 1, 0);
+        listOps.rightPushAll("next.update.asins", asins);
     }
 
-    private void resetNextAsins(List<String> asins) {
-        listOpts.trim("next.update.asins", 1, 0);
-        listOpts.rightPushAll("next.update.asins", asins);
+    private void writeAsinRankHash() {
+        List<String> results = listOps.range("done.update.results", 0, -1);
+        Objects.requireNonNull(results).forEach(json -> {
+            JsonObject disc = gson.fromJson(json, JsonObject.class);
+            String asin = disc.get("asin").getAsString();
+            if (disc.has("rank")) {
+                int rank = disc.get("rank").getAsInt();
+                hashOps.put("asin.rank.hash", asin, rank);
+            } else {
+                hashOps.delete("asin.rank.hash", asin);
+            }
+        });
     }
 
-    private void cleanNextAsins(Set<String> updatedAsins) {
+    private void cleanNextUpdateAsins(Set<String> updatedAsins) {
         updatedAsins.forEach(asin -> {
-            listOpts.remove("next.update.asins", 0, asin);
+            listOps.remove("next.update.asins", 0, asin);
         });
     }
 
