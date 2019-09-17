@@ -95,8 +95,8 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     private void writeAsinRankHash() {
-        List<String> results = listOps.range("done.update.results", 0, -1);
-        Objects.requireNonNull(results).forEach(json -> {
+        List<String> discs = listOps.range("done.update.discs", 0, -1);
+        Objects.requireNonNull(discs).forEach(json -> {
             JsonObject disc = gson.fromJson(json, JsonObject.class);
             String asin = disc.get("asin").getAsString();
             if (disc.has("rank")) {
