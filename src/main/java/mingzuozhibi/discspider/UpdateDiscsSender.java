@@ -3,6 +3,7 @@ package mingzuozhibi.discspider;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import mingzuozhibi.common.gson.GsonFactory;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.jms.JmsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,6 @@ import java.util.List;
 @RestController
 public class UpdateDiscsSender {
 
-    private Gson gson = new Gson();
-
     @Autowired
     private JmsService jmsService;
     @Autowired
@@ -25,6 +24,8 @@ public class UpdateDiscsSender {
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
+
+    private Gson gson = GsonFactory.createGson();
 
     @GetMapping("/sendPrevUpdateDiscs")
     public void sendPrevUpdateDiscs() {

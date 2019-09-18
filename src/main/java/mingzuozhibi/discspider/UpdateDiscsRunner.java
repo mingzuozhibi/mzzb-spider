@@ -3,7 +3,7 @@ package mingzuozhibi.discspider;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import mingzuozhibi.common.BaseController;
+import mingzuozhibi.common.gson.GsonFactory;
 import mingzuozhibi.common.jms.JmsMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
@@ -23,7 +23,7 @@ import static mingzuozhibi.common.util.ThreadUtils.runWithDaemon;
 
 @Slf4j
 @RestController
-public class UpdateDiscsRunner extends BaseController {
+public class UpdateDiscsRunner {
 
     @Autowired
     private JmsMessage jmsMessage;
@@ -40,7 +40,7 @@ public class UpdateDiscsRunner extends BaseController {
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;
 
-    private Gson gson = new Gson();
+    private Gson gson = GsonFactory.createGson();
 
     private AtomicBoolean running = new AtomicBoolean(false);
 
