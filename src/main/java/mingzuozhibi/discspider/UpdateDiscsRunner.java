@@ -3,7 +3,7 @@ package mingzuozhibi.discspider;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import mingzuozhibi.common.BaseController;
+import mingzuozhibi.common.gson.GsonFactory;
 import mingzuozhibi.common.jms.JmsMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
@@ -23,7 +23,7 @@ import static mingzuozhibi.common.util.ThreadUtils.runWithDaemon;
 
 @Slf4j
 @RestController
-public class UpdateDiscsRunner extends BaseController {
+public class UpdateDiscsRunner {
 
     @Autowired
     private JmsMessage jmsMessage;
@@ -40,7 +40,7 @@ public class UpdateDiscsRunner extends BaseController {
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;
 
-    private Gson gson = new Gson();
+    private Gson gson = GsonFactory.createGson();
 
     private AtomicBoolean running = new AtomicBoolean(false);
 
@@ -95,8 +95,8 @@ public class UpdateDiscsRunner extends BaseController {
     }
 
     private void writeAsinRankHash() {
-        List<String> results = listOps.range("done.update.results", 0, -1);
-        Objects.requireNonNull(results).forEach(json -> {
+        List<String> discs = listOps.range("done.update.discs", 0, -1);
+        Objects.requireNonNull(discs).forEach(json -> {
             JsonObject disc = gson.fromJson(json, JsonObject.class);
             String asin = disc.get("asin").getAsString();
             if (disc.has("rank")) {

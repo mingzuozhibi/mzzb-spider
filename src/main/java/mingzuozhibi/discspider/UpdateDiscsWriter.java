@@ -2,6 +2,7 @@ package mingzuozhibi.discspider;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import mingzuozhibi.common.gson.GsonFactory;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +15,10 @@ import java.util.stream.Collectors;
 @Component
 public class UpdateDiscsWriter {
 
-    private Gson gson = new Gson();
-
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
+
+    private Gson gson = GsonFactory.createGson();
 
     public void writeUpdateDiscs(Map<String, DiscParser> discInfos, boolean fullUpdate) {
         List<String> updatedDiscs = discInfos.values().stream()

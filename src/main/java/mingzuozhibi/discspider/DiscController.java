@@ -3,6 +3,7 @@ package mingzuozhibi.discspider;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import mingzuozhibi.common.BaseController;
+import mingzuozhibi.common.gson.GsonFactory;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ public class DiscController extends BaseController {
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
 
-    private Gson gson = new Gson();
+    private Gson gson = GsonFactory.createGson();
 
     @GetMapping("/fetchDisc/{asin}")
     public String fetchDisc(@PathVariable String asin) {
@@ -34,7 +35,7 @@ public class DiscController extends BaseController {
         if (result.isUnfinished()) {
             return errorMessage("抓取失败：" + result.formatError());
         } else {
-            return objectResult(gson.toJsonTree(result.getContent()));
+            return objectResult(result.getContent());
         }
     }
 
