@@ -1,22 +1,17 @@
 package mingzuozhibi.discspider;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import mingzuozhibi.common.gson.GsonFactory;
 import mingzuozhibi.common.jms.JmsMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static mingzuozhibi.common.util.ThreadUtils.runWithDaemon;
@@ -37,11 +32,6 @@ public class UpdateDiscsRunner {
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOps;
 
-    @Resource(name = "redisTemplate")
-    private HashOperations<String, String, Integer> hashOps;
-
-    private Gson gson = GsonFactory.createGson();
-
     private AtomicBoolean running = new AtomicBoolean(false);
 
     @GetMapping("/startFullUpdate")
@@ -50,14 +40,17 @@ public class UpdateDiscsRunner {
         jmsMessage.notify("计划任务：开始全量更新");
         if (!running.compareAndSet(false, true)) {
             jmsMessage.warning("任务终止：已有其他更新");
+            return;
         }
         List<String> asins = listOps.range("need.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
             jmsMessage.warning("任务终止：无可更新数据");
         } else {
-            runFetchDiscs(asins, true);
+            runWithDaemon(jmsMessage, "全量更新", () -> {
+                runFetchDiscs(asins, true);
+                running.set(false);
+            });
         }
-        running.set(false);
     }
 
     @GetMapping("/startNextUpdate")
@@ -66,52 +59,40 @@ public class UpdateDiscsRunner {
         jmsMessage.notify("计划任务：开始补充更新");
         if (!running.compareAndSet(false, true)) {
             jmsMessage.warning("任务终止：已有其他更新");
+            return;
         }
         List<String> asins = listOps.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
             jmsMessage.notify("任务终止：无可更新数据");
         } else {
-            runFetchDiscs(asins, false);
+            runWithDaemon(jmsMessage, "补充更新", () -> {
+                runFetchDiscs(asins, false);
+                running.set(false);
+            });
         }
-        running.set(false);
     }
 
     private void runFetchDiscs(List<String> asins, boolean fullUpdate) {
-        runWithDaemon(jmsMessage, "runFetchDiscs: fullUpdate=" + fullUpdate, () -> {
-            if (fullUpdate) {
-                resetNextUpdateAsins(asins);
-                writeAsinRankHash();
-            }
-            Map<String, DiscParser> discInfos = discSpider.updateDiscs(asins);
-            updateDiscsWriter.writeUpdateDiscs(discInfos, fullUpdate);
-            updateDiscsSender.sendPrevUpdateDiscs();
-            cleanNextUpdateAsins(discInfos.keySet());
-        });
-    }
+        if (fullUpdate) {
+            updateDiscsWriter.resetNextUpdateAsins(asins);
+            updateDiscsWriter.resetAsinRankHash();
+        }
 
-    private void resetNextUpdateAsins(List<String> asins) {
-        listOps.trim("next.update.asins", 1, 0);
-        listOps.rightPushAll("next.update.asins", asins);
-    }
+        Map<String, Disc> resultMap = discSpider.updateDiscs(asins);
 
-    private void writeAsinRankHash() {
-        List<String> discs = listOps.range("done.update.discs", 0, -1);
-        Objects.requireNonNull(discs).forEach(json -> {
-            JsonObject disc = gson.fromJson(json, JsonObject.class);
-            String asin = disc.get("asin").getAsString();
-            if (disc.has("rank")) {
-                int rank = disc.get("rank").getAsInt();
-                hashOps.put("asin.rank.hash", asin, rank);
-            } else {
-                hashOps.delete("asin.rank.hash", asin);
-            }
-        });
-    }
+        if (fullUpdate) {
+            updateDiscsWriter.cleanDoneUpdateDiscs();
+            updateDiscsWriter.cleanPrevUpdateDiscs();
+        } else {
+            updateDiscsWriter.cleanPrevUpdateDiscs();
+        }
 
-    private void cleanNextUpdateAsins(Set<String> updatedAsins) {
-        updatedAsins.forEach(asin -> {
-            listOps.remove("next.update.asins", 0, asin);
-        });
+        List<Disc> updatedDiscs = new ArrayList<>(resultMap.values());
+        updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscs);
+        updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscs);
+        updateDiscsWriter.recordHistoryOfDate(updatedDiscs);
+        updateDiscsWriter.cleanNextUpdateAsins(resultMap.keySet());
+        updateDiscsSender.sendPrevUpdateDiscs();
     }
 
 }

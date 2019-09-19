@@ -1,121 +1,167 @@
 package mingzuozhibi.discspider;
 
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.Getter;
-import lombok.ToString;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static mingzuozhibi.common.model.Result.formatErrorCause;
+
 @Getter
-@ToString
 public class DiscParser {
 
-    private String title;
-    private String type;
-    private String date;
-    private String asin;
-    private Integer rank;
+    private static Pattern patternOfRank = Pattern.compile(" - ([,\\d]+)位");
+    private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
+    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private Disc disc = new Disc();
+
+    @Ignore
+    private List<String> messages = new LinkedList<>();
 
     public DiscParser(String content) {
-        Document document = Jsoup.parseBodyFragment(content);
-        this.title = parseTitle(document);
-        this.type = parseType(document);
-        this.date = parseDate(document);
-        this.asin = parseAsin(document);
-        this.rank = parseRank(document);
+        parse(Jsoup.parseBodyFragment(content));
     }
 
-    private String parseTitle(Document document) {
+    private void parse(Document document) {
+        parseRank(document);
+        parseTitle(document);
+        parseAsinAndDate(document);
+        parseTypeAndPrice(document);
+    }
+
+    private void parseRank(Document document) {
+        Matcher matcher = patternOfRank.matcher(document.select("#SalesRank").text());
+        if (matcher.find()) {
+            disc.setRank(parseNumber(matcher.group(1)));
+        }
+    }
+
+    private void parseTitle(Document document) {
         String title = document.select("#productTitle").text().trim();
-        return title.length() > 500 ? title.substring(0, 500) : title;
+        disc.setTitle(title.length() > 500 ? title.substring(0, 500) : title);
     }
 
-    private String parseType(Document document) {
+    private void parseAsinAndDate(Document document) {
+        for (Element element : document.select("td.bucket>div.content li")) {
+            checkAsin(element);
+            checkDate(element);
+        }
+    }
+
+    private void checkAsin(Element element) {
+        if (element.text().startsWith("ASIN: ")) {
+            disc.setAsin(element.text().substring(6).trim());
+        }
+    }
+
+    private void checkDate(Element element) {
+        Matcher matcher = patternOfDate.matcher(element.text());
+        if (matcher.find()) {
+            String date = LocalDate.of(
+                Integer.parseInt(matcher.group("year")),
+                Integer.parseInt(matcher.group("month")),
+                Integer.parseInt(matcher.group("dom"))
+            ).format(formatter);
+            if (element.text().contains("発売日")) {
+                disc.setDate(date);
+            } else if (disc.getType().equals("Cd") && element.text().contains("CD")) {
+                disc.setDate(date);
+            }
+        }
+    }
+
+    private void parseTypeAndPrice(Document document) {
+        Elements elements = document.select(".swatchElement.selected");
+        if (elements.isEmpty()) {
+            tryGuessType(document);
+            messages.add("Parsing empty, guessing as " + disc.getType());
+            return;
+        }
+        String[] split = elements.first().text().split("￥");
+        String type = split[0].trim(), price = split[1].trim();
+
+        switch (type) {
+            case "Blu-ray":
+            case "3D":
+            case "4K":
+                disc.setType("Bluray");
+                break;
+            case "DVD":
+                disc.setType("Dvd");
+                break;
+            case "CD":
+                disc.setType("Cd");
+                break;
+            default:
+                disc.setType("Other");
+                tryGuessType(document);
+                messages.add("Parsing other, guessing as " + type);
+        }
+
+        disc.setPrice(parseNumber(price));
+    }
+
+    private Integer parseNumber(String input) {
+        try {
+            StringBuilder builder = new StringBuilder();
+            input.chars()
+                .filter(cp -> cp >= '0' && cp <= '9')
+                .forEach(builder::appendCodePoint);
+            return Integer.parseInt(builder.toString());
+        } catch (RuntimeException e) {
+            messages.add("parseNumber error: " + formatErrorCause(e));
+            return null;
+        }
+    }
+
+    private void tryGuessType(Document document) {
         for (Element element : document.select("#bylineInfo span:not(.a-color-secondary)")) {
             String type = element.text();
             if (type.equals("Blu-ray")) {
-                return "Bluray";
+                disc.setType("Bluray");
+                return;
             }
             if (type.equals("DVD")) {
-                return "Dvd";
+                disc.setType("Dvd");
+                return;
             }
             if (type.equals("CD")) {
-                return "Cd";
+                disc.setType("Cd");
+                return;
             }
         }
-
         String group = document.select("select.nav-search-dropdown option[selected]").text();
-        if (group != null && group.trim().equals("DVD")) {
-            String title = document.select("#productTitle").text().trim();
-
-            boolean isBD = title.contains("[Blu-ray]");
-            boolean isDVD = title.contains("[DVD]");
-            boolean hasBD = title.contains("Blu-ray");
-            boolean hasDVD = title.contains("DVD");
-
+        if (Objects.equals("DVD", group)) {
+            String fullTitle = document.select("#productTitle").text().trim();
+            boolean isBD = fullTitle.contains("[Blu-ray]");
+            boolean isDVD = fullTitle.contains("[DVD]");
+            boolean hasBD = fullTitle.contains("Blu-ray");
+            boolean hasDVD = fullTitle.contains("DVD");
             if (isBD && !isDVD) {
-                return "Bluray";
+                disc.setType("Bluray");
             }
             if (isDVD && !isBD) {
-                return "Dvd";
+                disc.setType("Dvd");
             }
             if (hasBD && !hasDVD) {
-                return "Bluray";
+                disc.setType("Bluray");
             }
             if (hasDVD && !hasBD) {
-                return "Dvd";
+                disc.setType("Dvd");
             }
-            return "Auto";
+            disc.setType("Auto");
         }
-
-        return "Other";
-    }
-
-    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    private String parseDate(Document document) {
-        Pattern pattern = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
-        for (Element element : document.select("td.bucket>div.content li")) {
-            Matcher matcher = pattern.matcher(element.text());
-            if (matcher.find()) {
-                String date = LocalDate.of(
-                    Integer.parseInt(matcher.group("year")),
-                    Integer.parseInt(matcher.group("month")),
-                    Integer.parseInt(matcher.group("dom"))
-                ).format(formatter);
-                if (type.equals("Cd") && element.text().contains("CD")) {
-                    return date;
-                }
-                if (element.text().contains("発売日")) {
-                    return date;
-                }
-            }
-        }
-        return null;
-    }
-
-    private String parseAsin(Document document) {
-        for (Element element : document.select("td.bucket>div.content li")) {
-            if (element.text().startsWith("ASIN: ")) {
-                return element.text().substring(6).trim();
-            }
-        }
-        return null;
-    }
-
-    private static Pattern rankReg = Pattern.compile(" - ([,\\d]+)位");
-
-    private Integer parseRank(Document document) {
-        Matcher matcher = rankReg.matcher(document.select("#SalesRank").text());
-        if (matcher.find()) {
-            return Integer.valueOf(matcher.group(1).replace(",", ""));
-        }
-        return null;
     }
 
 }
