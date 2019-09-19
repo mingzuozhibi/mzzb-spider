@@ -37,7 +37,7 @@ public class DiscParser {
         parseRank(document);
         parseTitle(document);
         parseAsinAndDate(document);
-        parseTypeAndPrice(document);
+        parseTypeAndPriceAndBuyset(document);
     }
 
     private void parseRank(Document document) {
@@ -66,29 +66,29 @@ public class DiscParser {
     }
 
     private void checkDate(Element element) {
-        Matcher matcher = patternOfDate.matcher(element.text());
+        String line = element.text();
+        if (!line.startsWith("発売日") && !line.startsWith("CD")) {
+            return;
+        }
+        Matcher matcher = patternOfDate.matcher(line);
         if (matcher.find()) {
             String date = LocalDate.of(
                 Integer.parseInt(matcher.group("year")),
                 Integer.parseInt(matcher.group("month")),
                 Integer.parseInt(matcher.group("dom"))
             ).format(formatter);
-            if (element.text().contains("発売日")) {
-                disc.setDate(date);
-            } else if (disc.getType().equals("Cd") && element.text().contains("CD")) {
-                disc.setDate(date);
-            }
+            disc.setDate(date);
         }
     }
 
-    private void parseTypeAndPrice(Document document) {
+    private void parseTypeAndPriceAndBuyset(Document document) {
         Elements elements = document.select(".swatchElement.selected");
         if (elements.isEmpty()) {
             tryGuessType(document);
             messages.add("Parsing empty, guessing as " + disc.getType());
             return;
         }
-        String[] split = elements.first().text().split("￥");
+        String[] split = elements.first().text().split("\\s+");
         String type = split[0].trim(), price = split[1].trim();
 
         switch (type) {
@@ -103,10 +103,13 @@ public class DiscParser {
             case "CD":
                 disc.setType("Cd");
                 break;
+            case "セット買い":
+                disc.setBuyset(true);
+                // no break;
             default:
                 disc.setType("Other");
                 tryGuessType(document);
-                messages.add("Parsing other, guessing as " + type);
+                messages.add("Parsing other, guessing as " + disc.getType());
         }
 
         disc.setPrice(parseNumber(price));

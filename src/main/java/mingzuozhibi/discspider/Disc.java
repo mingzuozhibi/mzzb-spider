@@ -13,5 +13,6 @@ public class Disc {
     private String title;
     private Integer rank;
     private Integer price;
+    private boolean buyset;
 
 }

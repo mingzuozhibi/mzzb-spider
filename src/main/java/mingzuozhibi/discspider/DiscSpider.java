@@ -60,46 +60,55 @@ public class DiscSpider {
 
     @SuppressWarnings("unchecked")
     private Result<Disc> doUpdateDisc(SessionFactory factory, SpiderRecorder recorder, String asin) {
+        // 记录开始
         recorder.jmsStartUpdateRow(asin);
 
+        // 开始抓取
         Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
+
+        // 抓取失败
         if (recorder.checkUnfinished(asin, bodyResult)) {
             return Result.ofErrorMessage(bodyResult.formatError());
         }
 
+        // 抓取成功
         String content = bodyResult.getContent();
+
+        // 发现反爬
+        if (hasAmazonNoSpider(content)) {
+            recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
+            return Result.ofErrorMessage("发现日亚反爬虫系统");
+        }
+
         try {
-            Disc disc = parseDisc(asin, content);
+            // 解析数据
+            DiscParser parser = new DiscParser(content);
+            parser.getMessages().forEach(message -> {
+                jmsMessage.warning("解析信息：[%s][%s]", asin, message);
+            });
 
-            if (Objects.equals(disc.getAsin(), asin)) {
-                Integer prevRank = hashOps.get("asin.rank.hash", asin);
-                Integer thisRank = disc.getRank();
-                recorder.jmsSuccessRow(asin, prevRank + " => " + thisRank);
-                return Result.ofContent(disc);
+            Disc disc = parser.getDisc();
 
-            } else if (hasAmazonNoSpider(content)) {
-                recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
-                return Result.ofErrorMessage("发现日亚反爬虫系统");
-
-            } else {
+            // 数据异常
+            if (!Objects.equals(disc.getAsin(), asin)) {
                 writeContent(content, asin);
                 recorder.jmsFailedRow(asin, "页面数据未通过校验");
                 return Result.ofErrorMessage("页面数据未通过校验");
             }
+
+            // 解析成功
+            Integer prevRank = hashOps.get("asin.rank.hash", asin);
+            Integer thisRank = disc.getRank();
+            recorder.jmsSuccessRow(asin, prevRank + " => " + thisRank);
+            return Result.ofContent(disc);
+
         } catch (Exception e) {
+            // 捕获异常
             recorder.jmsErrorRow(asin, e);
             writeContent(content, asin);
             log.warn("parsing error", e);
             return Result.ofErrorCause(e);
         }
-    }
-
-    private Disc parseDisc(String asin, String content) {
-        DiscParser parser = new DiscParser(content);
-        parser.getMessages().forEach(message -> {
-            jmsMessage.warning("解析信息：[%s][%s]", asin, message);
-        });
-        return parser.getDisc();
     }
 
     private boolean hasAmazonNoSpider(String content) {
