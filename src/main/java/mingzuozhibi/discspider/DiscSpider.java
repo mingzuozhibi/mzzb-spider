@@ -1,12 +1,13 @@
 package mingzuozhibi.discspider;
 
 import io.webfolder.cdp.session.SessionFactory;
+import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
 import mingzuozhibi.common.spider.SpiderRecorder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.LinkedHashMap;
@@ -18,7 +19,8 @@ import static mingzuozhibi.common.spider.SpiderCdp4j.doInSessionFactory;
 import static mingzuozhibi.common.spider.SpiderCdp4j.waitResult;
 import static mingzuozhibi.common.spider.SpiderRecorder.writeContent;
 
-@Service
+@Slf4j
+@Component
 public class DiscSpider {
 
     @Autowired
@@ -87,7 +89,8 @@ public class DiscSpider {
         } catch (Exception e) {
             recorder.jmsErrorRow(asin, e);
             writeContent(content, asin);
-            return Result.ofExceptions(e);
+            log.warn("parsing error", e);
+            return Result.ofErrorCause(e);
         }
     }
 
