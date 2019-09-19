@@ -106,7 +106,7 @@ public class DiscParser {
             default:
                 disc.setType("Other");
                 tryGuessType(document);
-                messages.add("Parsing other, guessing as " + type);
+                messages.add("Parsing other, guessing as " + disc.getType());
         }
 
         disc.setPrice(parseNumber(price));
