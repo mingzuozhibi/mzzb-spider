@@ -66,18 +66,18 @@ public class DiscParser {
     }
 
     private void checkDate(Element element) {
-        Matcher matcher = patternOfDate.matcher(element.text());
+        String line = element.text();
+        if (!line.startsWith("発売日") && !line.startsWith("CD")) {
+            return;
+        }
+        Matcher matcher = patternOfDate.matcher(line);
         if (matcher.find()) {
             String date = LocalDate.of(
                 Integer.parseInt(matcher.group("year")),
                 Integer.parseInt(matcher.group("month")),
                 Integer.parseInt(matcher.group("dom"))
             ).format(formatter);
-            if (element.text().contains("発売日")) {
-                disc.setDate(date);
-            } else if (disc.getType().equals("Cd") && element.text().contains("CD")) {
-                disc.setDate(date);
-            }
+            disc.setDate(date);
         }
     }
 
