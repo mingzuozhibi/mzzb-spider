@@ -37,7 +37,7 @@ public class DiscParser {
         parseRank(document);
         parseTitle(document);
         parseAsinAndDate(document);
-        parseTypeAndPrice(document);
+        parseTypeAndPriceAndBuyset(document);
     }
 
     private void parseRank(Document document) {
@@ -81,7 +81,7 @@ public class DiscParser {
         }
     }
 
-    private void parseTypeAndPrice(Document document) {
+    private void parseTypeAndPriceAndBuyset(Document document) {
         Elements elements = document.select(".swatchElement.selected");
         if (elements.isEmpty()) {
             tryGuessType(document);
@@ -103,6 +103,9 @@ public class DiscParser {
             case "CD":
                 disc.setType("Cd");
                 break;
+            case "セット買い":
+                disc.setBuyset(true);
+                // no break;
             default:
                 disc.setType("Other");
                 tryGuessType(document);
