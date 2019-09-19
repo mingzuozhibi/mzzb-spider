@@ -12,7 +12,7 @@
 
     <groupId>mingzuozhibi</groupId>
     <artifactId>mzzb-disc-spider</artifactId>
-    <version>0.3.0</version>
+    <version>0.3.1</version>
 
     <name>Mzzb Disc Spider</name>
     <description>Disc Spider For Mingzuozhibi.com</description>
