@@ -88,7 +88,7 @@ public class DiscParser {
             messages.add("Parsing empty, guessing as " + disc.getType());
             return;
         }
-        String[] split = elements.first().text().split("\\n");
+        String[] split = elements.first().text().split("￥");
         String type = split[0].trim(), price = split[1].trim();
 
         switch (type) {
