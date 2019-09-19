@@ -33,12 +33,12 @@ public class UpdateDiscsSender {
         if (discs == null || discs.size() == 0) {
             jmsMessage.warning("无法同步上次更新结果：没有数据");
         } else {
-            JsonArray discInfos = new JsonArray();
+            JsonArray root = new JsonArray();
             discs.forEach(json -> {
-                discInfos.add(gson.fromJson(json, JsonObject.class));
+                root.add(gson.fromJson(json, JsonObject.class));
             });
-            jmsService.sendJson("prev.update.discs", discInfos.toString(), "size=" + discs.size());
-            jmsMessage.success("正在同步上次更新结果：共%d个", discs.size());
+            jmsService.sendJson("prev.update.discs", root.toString(), "size=" + discs.size());
+            jmsMessage.success("正在同步上次更新结果：共%d个", root.size());
         }
     }
 
@@ -48,12 +48,12 @@ public class UpdateDiscsSender {
         if (discs == null || discs.size() == 0) {
             jmsMessage.warning("无法同步全量更新结果：没有数据");
         } else {
-            JsonArray discInfos = new JsonArray();
+            JsonArray root = new JsonArray();
             discs.forEach(json -> {
-                discInfos.add(gson.fromJson(json, JsonObject.class));
+                root.add(gson.fromJson(json, JsonObject.class));
             });
-            jmsService.sendJson("done.update.discs", discInfos.toString(), "size=" + discs.size());
-            jmsMessage.success("正在同步全量更新结果：共%d个", discs.size());
+            jmsService.sendJson("done.update.discs", root.toString(), "size=" + discs.size());
+            jmsMessage.success("正在同步全量更新结果：共%d个", root.size());
         }
     }
 

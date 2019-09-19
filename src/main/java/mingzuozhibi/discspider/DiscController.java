@@ -31,7 +31,7 @@ public class DiscController extends BaseController {
     @GetMapping("/fetchDisc/{asin}")
     public String fetchDisc(@PathVariable String asin) {
         jmsMessage.notify("开始查询碟片信息[%s]", asin);
-        Result<DiscParser> result = discSpider.updateDisc(asin);
+        Result<Disc> result = discSpider.updateDisc(asin);
         if (result.isUnfinished()) {
             return errorMessage("抓取失败：" + result.formatError());
         } else {
