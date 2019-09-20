@@ -92,9 +92,13 @@ public class DiscParser {
         String type = split[0].trim(), price = split[1].trim();
 
         switch (type) {
-            case "Blu-ray":
             case "3D":
+                disc.setTypeExtra("3D");
+                // no break;
             case "4K":
+                disc.setTypeExtra("4K");
+                // no break;
+            case "Blu-ray":
                 disc.setType("Bluray");
                 break;
             case "DVD":
@@ -130,18 +134,20 @@ public class DiscParser {
     private void tryGuessType(Document document) {
         disc.setType("Other");
         for (Element element : document.select("#bylineInfo span:not(.a-color-secondary)")) {
-            String type = element.text();
-            if (type.equals("Blu-ray")) {
-                disc.setType("Bluray");
-                return;
-            }
-            if (type.equals("DVD")) {
-                disc.setType("Dvd");
-                return;
-            }
-            if (type.equals("CD")) {
-                disc.setType("Cd");
-                return;
+            String type = element.text().trim();
+            switch (type) {
+                case "Blu-ray":
+                    disc.setType("Bluray");
+                    return;
+                case "DVD":
+                    disc.setType("Dvd");
+                    return;
+                case "CD":
+                    disc.setType("Cd");
+                    return;
+                case "セット買い":
+                    disc.setBuyset(true);
+                    // no break;
             }
         }
         String group = document.select("select.nav-search-dropdown option[selected]").text();

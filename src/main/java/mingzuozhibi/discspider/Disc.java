@@ -9,6 +9,7 @@ public class Disc {
 
     private String asin;
     private String type;
+    private String typeExtra;
     private String date;
     private String title;
     private Integer rank;
