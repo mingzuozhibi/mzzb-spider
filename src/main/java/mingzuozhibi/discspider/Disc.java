@@ -15,5 +15,6 @@ public class Disc {
     private Integer rank;
     private Integer price;
     private boolean buyset;
+    private boolean outOfStock;
 
 }

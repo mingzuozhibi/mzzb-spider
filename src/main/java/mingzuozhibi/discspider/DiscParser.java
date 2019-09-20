@@ -37,7 +37,7 @@ public class DiscParser {
         parseRank(document);
         parseTitle(document);
         parseAsinAndDate(document);
-        parseTypeAndPriceAndBuyset(document);
+        parseTypeAndPrice(document);
     }
 
     private void parseRank(Document document) {
@@ -81,11 +81,17 @@ public class DiscParser {
         }
     }
 
-    private void parseTypeAndPriceAndBuyset(Document document) {
+    private void parseTypeAndPrice(Document document) {
+        if (document.select("#outOfStock").size() > 0) {
+            disc.setOutOfStock(true);
+        }
+
         Elements elements = document.select(".swatchElement.selected");
         if (elements.isEmpty()) {
+            if (!disc.isOutOfStock()) {
+                messages.add("Parsing empty, guessing as " + disc.getType());
+            }
             tryGuessType(document);
-            messages.add("Parsing empty, guessing as " + disc.getType());
             return;
         }
         String[] split = elements.first().text().split("\\s+");
@@ -115,7 +121,9 @@ public class DiscParser {
                 messages.add("Parsing other, guessing as " + disc.getType());
         }
 
-        disc.setPrice(parseNumber(price));
+        if (!disc.isOutOfStock()) {
+            disc.setPrice(parseNumber(price));
+        }
     }
 
     private Integer parseNumber(String input) {
