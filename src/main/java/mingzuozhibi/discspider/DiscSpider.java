@@ -26,6 +26,8 @@ public class DiscSpider {
     @Autowired
     private JmsMessage jmsMessage;
 
+    private ThreadLocal<DiscParser> discParser = ThreadLocal.withInitial(() -> new DiscParser(jmsMessage));
+
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;
 
@@ -82,7 +84,7 @@ public class DiscSpider {
 
         try {
             // 解析数据
-            Disc disc = new DiscParser(content, jmsMessage).getDisc();
+            Disc disc = discParser.get().parse(asin, content);
 
             // 数据异常
             if (!Objects.equals(disc.getAsin(), asin)) {

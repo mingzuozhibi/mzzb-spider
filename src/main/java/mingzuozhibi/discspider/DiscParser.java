@@ -21,22 +21,25 @@ public class DiscParser {
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private JmsMessage jmsMessage;
-    private Disc disc = new Disc();
+    private String asin;
+    private Disc disc;
 
-    public DiscParser(String content, JmsMessage jmsMessage) {
+    public DiscParser(JmsMessage jmsMessage) {
         this.jmsMessage = jmsMessage;
-        parse(Jsoup.parseBodyFragment(content));
     }
 
-    public Disc getDisc() {
-        return disc;
+    public Disc parse(String asin, String content) {
+        this.asin = asin;
+        this.disc = new Disc();
+        return parse(Jsoup.parseBodyFragment(content));
     }
 
-    private void parse(Document document) {
+    private Disc parse(Document document) {
         parseRank(document);
         parseTitle(document);
         parseAsinAndDate(document);
         parseTypeAndPrice(document);
+        return this.disc;
     }
 
     private void parseRank(Document document) {
@@ -57,10 +60,10 @@ public class DiscParser {
             checkDate(element);
         }
         if (disc.getAsin() == null) {
-            jmsMessage.warning("未发现Asin");
+            jmsMessage.warning("解析信息：[%s][未发现商品编号]", asin);
         }
         if (disc.getDate() == null) {
-            jmsMessage.warning("未发现发售日期");
+            jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
         }
     }
 
@@ -89,14 +92,14 @@ public class DiscParser {
     private void parseTypeAndPrice(Document document) {
         if (document.select("#outOfStock").size() > 0) {
             disc.setOutOfStock(true);
-            jmsMessage.warning("目前缺货无价格");
+            jmsMessage.warning("解析信息：[%s][目前缺货无价格]", asin);
         }
 
         Elements elements = document.select(".swatchElement.selected");
         if (elements.isEmpty()) {
             checkDateExtra(document);
             if (disc.getType() == null) {
-                jmsMessage.warning("未发现碟片类型");
+                jmsMessage.warning("解析信息：[%s][未发现碟片类型]", asin);
                 tryGuessType(document);
             }
             return;
@@ -134,7 +137,7 @@ public class DiscParser {
 
         if (disc.getType() == null) {
             if (!disc.isBuyset()) {
-                jmsMessage.warning("未知碟片类型：" + type);
+                jmsMessage.warning("解析信息：[%s][未知碟片类型=%s]", asin, type);
             }
             tryGuessType(document);
         }
@@ -162,7 +165,7 @@ public class DiscParser {
     private void setBuyset() {
         if (!disc.isBuyset()) {
             disc.setBuyset(true);
-            jmsMessage.warning("检测到套装商品");
+            jmsMessage.warning("解析信息：[%s][检测到套装商品]", asin);
         }
     }
 
@@ -176,29 +179,29 @@ public class DiscParser {
             boolean hasDVD = fullTitle.contains("DVD");
             if (isBD && !isDVD) {
                 disc.setType("Bluray");
-                jmsMessage.warning("推测类型为BD");
+                jmsMessage.warning("解析信息：[%s][推测类型为BD]", asin);
                 return;
             }
             if (isDVD && !isBD) {
                 disc.setType("Dvd");
-                jmsMessage.warning("推测类型为DVD");
+                jmsMessage.warning("解析信息：[%s][推测类型为DVD]", asin);
                 return;
             }
             if (hasBD && !hasDVD) {
-                jmsMessage.warning("推测类型为BD");
+                jmsMessage.warning("解析信息：[%s][推测类型为BD]", asin);
                 disc.setType("Bluray");
                 return;
             }
             if (hasDVD && !hasBD) {
-                jmsMessage.warning("推测类型为DVD");
+                jmsMessage.warning("解析信息：[%s][推测类型为DVD]", asin);
                 disc.setType("Dvd");
                 return;
             }
-            jmsMessage.warning("推测类型为DVD大类");
+            jmsMessage.warning("解析信息：[%s][推测类型为DVD或BD]", asin);
             disc.setType("Auto");
             return;
         }
-        jmsMessage.warning("推测类型为其他");
+        jmsMessage.warning("解析信息：[%s][推测类型为其他]", asin);
         disc.setType("Other");
     }
 
@@ -210,7 +213,7 @@ public class DiscParser {
                 .forEach(builder::appendCodePoint);
             return Integer.parseInt(builder.toString());
         } catch (RuntimeException e) {
-            jmsMessage.danger("parseNumber error: " + formatErrorCause(e));
+            jmsMessage.danger("解析信息：[%s][parseNumber error：%s]", asin, formatErrorCause(e));
             return null;
         }
     }
