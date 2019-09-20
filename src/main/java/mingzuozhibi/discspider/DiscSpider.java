@@ -82,12 +82,7 @@ public class DiscSpider {
 
         try {
             // 解析数据
-            DiscParser parser = new DiscParser(content);
-            parser.getMessages().forEach(message -> {
-                jmsMessage.warning("解析信息：[%s][%s]", asin, message);
-            });
-
-            Disc disc = parser.getDisc();
+            Disc disc = new DiscParser(content, jmsMessage).getDisc();
 
             // 数据异常
             if (!Objects.equals(disc.getAsin(), asin)) {

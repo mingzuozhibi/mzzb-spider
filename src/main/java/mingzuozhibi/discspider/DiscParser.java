@@ -1,7 +1,6 @@
 package mingzuozhibi.discspider;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
-import lombok.Getter;
+import mingzuozhibi.common.jms.JmsMessage;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,28 +8,28 @@ import org.jsoup.select.Elements;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static mingzuozhibi.common.model.Result.formatErrorCause;
 
-@Getter
 public class DiscParser {
 
     private static Pattern patternOfRank = Pattern.compile(" - ([,\\d]+)位");
     private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    private JmsMessage jmsMessage;
     private Disc disc = new Disc();
 
-    @Ignore
-    private List<String> messages = new LinkedList<>();
-
-    public DiscParser(String content) {
+    public DiscParser(String content, JmsMessage jmsMessage) {
+        this.jmsMessage = jmsMessage;
         parse(Jsoup.parseBodyFragment(content));
+    }
+
+    public Disc getDisc() {
+        return disc;
     }
 
     private void parse(Document document) {
@@ -56,6 +55,12 @@ public class DiscParser {
         for (Element element : document.select("td.bucket>div.content li")) {
             checkAsin(element);
             checkDate(element);
+        }
+        if (disc.getAsin() == null) {
+            jmsMessage.warning("未发现Asin");
+        }
+        if (disc.getDate() == null) {
+            jmsMessage.warning("未发现发售日期");
         }
     }
 
@@ -84,18 +89,25 @@ public class DiscParser {
     private void parseTypeAndPrice(Document document) {
         if (document.select("#outOfStock").size() > 0) {
             disc.setOutOfStock(true);
+            jmsMessage.warning("目前缺货无价格");
         }
 
         Elements elements = document.select(".swatchElement.selected");
         if (elements.isEmpty()) {
-            if (!disc.isOutOfStock()) {
-                messages.add("Parsing empty, guessing as " + disc.getType());
+            checkDateExtra(document);
+            if (disc.getType() == null) {
+                jmsMessage.warning("未发现碟片类型");
+                tryGuessType(document);
             }
-            tryGuessType(document);
             return;
         }
+
         String[] split = elements.first().text().split("\\s+");
         String type = split[0].trim(), price = split[1].trim();
+
+        if (!disc.isOutOfStock()) {
+            disc.setPrice(parseNumber(price));
+        }
 
         switch (type) {
             case "3D":
@@ -106,41 +118,29 @@ public class DiscParser {
                 // no break;
             case "Blu-ray":
                 disc.setType("Bluray");
-                break;
+                return;
             case "DVD":
                 disc.setType("Dvd");
-                break;
+                return;
             case "CD":
                 disc.setType("Cd");
-                break;
+                return;
             case "セット買い":
-                disc.setBuyset(true);
-                // no break;
+                setBuyset();
+                // no break
             default:
-                tryGuessType(document);
-                messages.add("Parsing other, guessing as " + disc.getType());
+                checkDateExtra(document);
         }
 
-        if (!disc.isOutOfStock()) {
-            disc.setPrice(parseNumber(price));
-        }
-    }
-
-    private Integer parseNumber(String input) {
-        try {
-            StringBuilder builder = new StringBuilder();
-            input.chars()
-                .filter(cp -> cp >= '0' && cp <= '9')
-                .forEach(builder::appendCodePoint);
-            return Integer.parseInt(builder.toString());
-        } catch (RuntimeException e) {
-            messages.add("parseNumber error: " + formatErrorCause(e));
-            return null;
+        if (disc.getType() == null) {
+            if (!disc.isBuyset()) {
+                jmsMessage.warning("未知碟片类型：" + type);
+            }
+            tryGuessType(document);
         }
     }
 
-    private void tryGuessType(Document document) {
-        disc.setType("Other");
+    private void checkDateExtra(Document document) {
         for (Element element : document.select("#bylineInfo span:not(.a-color-secondary)")) {
             String type = element.text().trim();
             switch (type) {
@@ -154,10 +154,19 @@ public class DiscParser {
                     disc.setType("Cd");
                     return;
                 case "セット買い":
-                    disc.setBuyset(true);
-                    // no break;
+                    setBuyset();
             }
         }
+    }
+
+    private void setBuyset() {
+        if (!disc.isBuyset()) {
+            disc.setBuyset(true);
+            jmsMessage.warning("检测到套装商品");
+        }
+    }
+
+    private void tryGuessType(Document document) {
         String group = document.select("select.nav-search-dropdown option[selected]").text();
         if (Objects.equals("DVD", group)) {
             String fullTitle = document.select("#productTitle").text().trim();
@@ -167,21 +176,42 @@ public class DiscParser {
             boolean hasDVD = fullTitle.contains("DVD");
             if (isBD && !isDVD) {
                 disc.setType("Bluray");
+                jmsMessage.warning("推测类型为BD");
                 return;
             }
             if (isDVD && !isBD) {
                 disc.setType("Dvd");
+                jmsMessage.warning("推测类型为DVD");
                 return;
             }
             if (hasBD && !hasDVD) {
+                jmsMessage.warning("推测类型为BD");
                 disc.setType("Bluray");
                 return;
             }
             if (hasDVD && !hasBD) {
+                jmsMessage.warning("推测类型为DVD");
                 disc.setType("Dvd");
                 return;
             }
+            jmsMessage.warning("推测类型为DVD大类");
             disc.setType("Auto");
+            return;
+        }
+        jmsMessage.warning("推测类型为其他");
+        disc.setType("Other");
+    }
+
+    private Integer parseNumber(String input) {
+        try {
+            StringBuilder builder = new StringBuilder();
+            input.chars()
+                .filter(cp -> cp >= '0' && cp <= '9')
+                .forEach(builder::appendCodePoint);
+            return Integer.parseInt(builder.toString());
+        } catch (RuntimeException e) {
+            jmsMessage.danger("parseNumber error: " + formatErrorCause(e));
+            return null;
         }
     }
 
