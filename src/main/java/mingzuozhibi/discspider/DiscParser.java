@@ -107,7 +107,6 @@ public class DiscParser {
                 disc.setBuyset(true);
                 // no break;
             default:
-                disc.setType("Other");
                 tryGuessType(document);
                 messages.add("Parsing other, guessing as " + disc.getType());
         }
@@ -129,6 +128,7 @@ public class DiscParser {
     }
 
     private void tryGuessType(Document document) {
+        disc.setType("Other");
         for (Element element : document.select("#bylineInfo span:not(.a-color-secondary)")) {
             String type = element.text();
             if (type.equals("Blu-ray")) {
@@ -153,15 +153,19 @@ public class DiscParser {
             boolean hasDVD = fullTitle.contains("DVD");
             if (isBD && !isDVD) {
                 disc.setType("Bluray");
+                return;
             }
             if (isDVD && !isBD) {
                 disc.setType("Dvd");
+                return;
             }
             if (hasBD && !hasDVD) {
                 disc.setType("Bluray");
+                return;
             }
             if (hasDVD && !hasBD) {
                 disc.setType("Dvd");
+                return;
             }
             disc.setType("Auto");
         }
