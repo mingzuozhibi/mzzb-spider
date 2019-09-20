@@ -5,10 +5,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,6 +20,17 @@ public class DiscParser {
 
     private static Pattern patternOfRank = Pattern.compile(" - ([,\\d]+)位");
     private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
+    private static Pattern patternOfDateOfBuyset;
+
+    static {
+        String regex = "\\(" +
+            "(?<year>\\d{4})\\D+" +
+            "(?<month>\\d{1,2})\\D+" +
+            "(?<dom>\\d{1,2})日?" +
+            "発売予定\\)";
+        patternOfDateOfBuyset = Pattern.compile(regex);
+    }
+
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private JmsMessage jmsMessage;
@@ -28,97 +41,147 @@ public class DiscParser {
         this.jmsMessage = jmsMessage;
     }
 
-    public Disc parse(String asin, String content) {
+    public Optional<Disc> parse(String asin, String content) {
         this.asin = asin;
         this.disc = new Disc();
         return parse(Jsoup.parseBodyFragment(content));
     }
 
-    private Disc parse(Document document) {
-        parseRank(document);
-        parseTitle(document);
+    private Optional<Disc> parse(Document document) {
+
+        /*
+         * 解析商品编号，应该与传入的相同
+         * 解析发售日期，套装商品解析不到
+         */
+
         parseAsinAndDate(document);
-        parseTypeAndPrice(document);
-        return this.disc;
+
+        if (StringUtils.isEmpty(disc.getAsin())) {
+            jmsMessage.warning("解析信息：[%s][未发现商品编号]", asin);
+            return Optional.empty();
+        }
+        if (!Objects.equals(disc.getAsin(), asin)) {
+            jmsMessage.warning("解析信息：[%s][商品编号不符合]", asin);
+            return Optional.empty();
+        }
+
+        /*
+         * 解析碟片排名，碟片排名可以为空
+         * 解析碟片标题，碟片标题应该存在
+         */
+
+        parseRankAndTitle(document);
+
+        if (StringUtils.isEmpty(disc.getTitle())) {
+            jmsMessage.warning("解析信息：[%s][未发现碟片标题]", asin);
+        }
+
+        /*
+         * 解析碟片库存，商品缺货没有价格
+         * 解析碟片价格，有货时应该有价格
+         */
+
+        parseStockAndPrice(document);
+
+        if (!disc.isOutOfStock() && Objects.isNull(disc.getPrice())) {
+            jmsMessage.warning("解析信息：[%s][未发现碟片价格]", asin);
+        }
+
+        /*
+         * 解析碟片类型，三种方法确保获取
+         * 解析套装商品，解析套装发售日期
+         */
+
+        parseTypeAndBuyset(document);
+
+        if (disc.isBuyset()) {
+            parseDateOfBuyset(document);
+        }
+        if (Objects.isNull(disc.getDate())) {
+            jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
+        }
+
+        return Optional.of(disc);
     }
 
-    private void parseRank(Document document) {
+    /*
+     * 解析商品编号和发售日期
+     */
+
+    private void parseAsinAndDate(Document document) {
+        for (Element element : document.select("td.bucket>div.content li")) {
+            String line = element.text();
+            // check asin
+            if (line.startsWith("ASIN: ")) {
+                disc.setAsin(line.substring(6));
+            }
+            // check date
+            if (line.startsWith("発売日") || line.startsWith("CD")) {
+                Matcher matcher = patternOfDate.matcher(line);
+                if (matcher.find()) {
+                    setDate(matcher);
+                }
+            }
+        }
+    }
+
+    /*
+     * 解析碟片排名和碟片标题
+     */
+
+    private void parseRankAndTitle(Document document) {
+        // parse rank
         Matcher matcher = patternOfRank.matcher(document.select("#SalesRank").text());
         if (matcher.find()) {
             disc.setRank(parseNumber(matcher.group(1)));
         }
+        // parse title
+        String fullTitle = document.select("#productTitle").text();
+        disc.setTitle(fullTitle.substring(0, Math.min(fullTitle.length(), 500)));
     }
 
-    private void parseTitle(Document document) {
-        String title = document.select("#productTitle").text().trim();
-        disc.setTitle(title.length() > 500 ? title.substring(0, 500) : title);
-    }
+    /*
+     * 解析碟片库存和碟片价格
+     */
 
-    private void parseAsinAndDate(Document document) {
-        for (Element element : document.select("td.bucket>div.content li")) {
-            checkAsin(element);
-            checkDate(element);
-        }
-        if (disc.getAsin() == null) {
-            jmsMessage.warning("解析信息：[%s][未发现商品编号]", asin);
-        }
-        if (disc.getDate() == null) {
-            jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
-        }
-    }
-
-    private void checkAsin(Element element) {
-        if (element.text().startsWith("ASIN: ")) {
-            disc.setAsin(element.text().substring(6).trim());
-        }
-    }
-
-    private void checkDate(Element element) {
-        String line = element.text();
-        if (!line.startsWith("発売日") && !line.startsWith("CD")) {
-            return;
-        }
-        Matcher matcher = patternOfDate.matcher(line);
-        if (matcher.find()) {
-            String date = LocalDate.of(
-                Integer.parseInt(matcher.group("year")),
-                Integer.parseInt(matcher.group("month")),
-                Integer.parseInt(matcher.group("dom"))
-            ).format(formatter);
-            disc.setDate(date);
-        }
-    }
-
-    private void parseTypeAndPrice(Document document) {
+    private void parseStockAndPrice(Document document) {
         if (document.select("#outOfStock").size() > 0) {
             disc.setOutOfStock(true);
-            jmsMessage.warning("解析信息：[%s][目前缺货无价格]", asin);
         }
-
         Elements elements = document.select(".swatchElement.selected");
-        if (elements.isEmpty()) {
-            checkDateExtra(document);
-            if (disc.getType() == null) {
-                jmsMessage.warning("解析信息：[%s][未发现碟片类型]", asin);
-                tryGuessType(document);
+        if (!elements.isEmpty()) {
+            String text = elements.first().text();
+            String price = text.split("\\s+")[1];
+            if (!disc.isOutOfStock()) {
+                disc.setPrice(parseNumber(price));
             }
-            return;
+        }
+    }
+
+    /*
+     * 解析碟片类型和套装商品
+     */
+
+    private void parseTypeAndBuyset(Document document) {
+        Elements elements = document.select(".swatchElement.selected");
+        if (!elements.isEmpty()) {
+            parseTypeBySwatch(elements.first().text());
         }
 
-        String[] split = elements.first().text().split("\\s+");
-        String type = split[0].trim(), price = split[1].trim();
-
-        if (!disc.isOutOfStock()) {
-            disc.setPrice(parseNumber(price));
+        if (Objects.isNull(disc.getType())) {
+            parseTypeByLine(document);
         }
 
+        if (Objects.isNull(disc.getType())) {
+            tryGuessType(document);
+        }
+    }
+
+    private void parseTypeBySwatch(String swatch) {
+        String type = swatch.split("\\s+")[0];
         switch (type) {
             case "3D":
-                disc.setTypeExtra("3D");
-                // no break;
             case "4K":
-                disc.setTypeExtra("4K");
-                // no break;
             case "Blu-ray":
                 disc.setType("Bluray");
                 return;
@@ -130,23 +193,15 @@ public class DiscParser {
                 return;
             case "セット買い":
                 setBuyset();
-                // no break
+                break;
             default:
-                checkDateExtra(document);
-        }
-
-        if (disc.getType() == null) {
-            if (!disc.isBuyset()) {
                 jmsMessage.warning("解析信息：[%s][未知碟片类型=%s]", asin, type);
-            }
-            tryGuessType(document);
         }
     }
 
-    private void checkDateExtra(Document document) {
+    private void parseTypeByLine(Document document) {
         for (Element element : document.select("#bylineInfo span:not(.a-color-secondary)")) {
-            String type = element.text().trim();
-            switch (type) {
+            switch (element.text()) {
                 case "Blu-ray":
                     disc.setType("Bluray");
                     return;
@@ -158,42 +213,37 @@ public class DiscParser {
                     return;
                 case "セット買い":
                     setBuyset();
+                    return;
             }
         }
-    }
-
-    private void setBuyset() {
-        if (!disc.isBuyset()) {
-            disc.setBuyset(true);
-            jmsMessage.warning("解析信息：[%s][检测到套装商品]", asin);
-        }
+        jmsMessage.info("解析信息：[%s][未发现碟片类型]", asin);
     }
 
     private void tryGuessType(Document document) {
-        String group = document.select("select.nav-search-dropdown option[selected]").text();
-        if (Objects.equals("DVD", group)) {
-            String fullTitle = document.select("#productTitle").text().trim();
-            boolean isBD = fullTitle.contains("[Blu-ray]");
-            boolean isDVD = fullTitle.contains("[DVD]");
-            boolean hasBD = fullTitle.contains("Blu-ray");
-            boolean hasDVD = fullTitle.contains("DVD");
+        String category = document.select("select.nav-search-dropdown option[selected]").text();
+        if (Objects.equals("DVD", category)) {
+            String title = document.select("#productTitle").text();
+            boolean isBD = title.contains("[Blu-ray]");
+            boolean isDVD = title.contains("[DVD]");
+            boolean hasBD = title.contains("Blu-ray");
+            boolean hasDVD = title.contains("DVD");
             if (isBD && !isDVD) {
                 disc.setType("Bluray");
-                jmsMessage.warning("解析信息：[%s][推测类型为BD]", asin);
+                jmsMessage.info("解析信息：[%s][推测类型为BD]", asin);
                 return;
             }
             if (isDVD && !isBD) {
                 disc.setType("Dvd");
-                jmsMessage.warning("解析信息：[%s][推测类型为DVD]", asin);
+                jmsMessage.info("解析信息：[%s][推测类型为DVD]", asin);
                 return;
             }
             if (hasBD && !hasDVD) {
-                jmsMessage.warning("解析信息：[%s][推测类型为BD]", asin);
+                jmsMessage.info("解析信息：[%s][推测类型为BD]", asin);
                 disc.setType("Bluray");
                 return;
             }
             if (hasDVD && !hasBD) {
-                jmsMessage.warning("解析信息：[%s][推测类型为DVD]", asin);
+                jmsMessage.info("解析信息：[%s][推测类型为DVD]", asin);
                 disc.setType("Dvd");
                 return;
             }
@@ -203,6 +253,37 @@ public class DiscParser {
         }
         jmsMessage.warning("解析信息：[%s][推测类型为其他]", asin);
         disc.setType("Other");
+    }
+
+    /*
+     * 解析套装商品发售日期
+     */
+
+    private void parseDateOfBuyset(Document document) {
+        Matcher matcher = patternOfDateOfBuyset.matcher(document.select("#productAlert_feature_div").text());
+        if (matcher.find()) {
+            setDate(matcher);
+        }
+    }
+
+    /*
+     * 一些辅助方法
+     */
+
+    private void setBuyset() {
+        if (!disc.isBuyset()) {
+            disc.setBuyset(true);
+            jmsMessage.info("解析信息：[%s][检测到套装商品]", asin);
+        }
+    }
+
+    private void setDate(Matcher matcher) {
+        String date = LocalDate.of(
+            Integer.parseInt(matcher.group("year")),
+            Integer.parseInt(matcher.group("month")),
+            Integer.parseInt(matcher.group("dom"))
+        ).format(formatter);
+        disc.setDate(date);
     }
 
     private Integer parseNumber(String input) {
