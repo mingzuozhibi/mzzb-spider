@@ -139,13 +139,9 @@ public class DiscParser {
         if (document.select("#outOfStock").size() > 0) {
             disc.setOutOfStock(true);
         }
-        Elements elements = document.select(".swatchElement.selected");
-        if (!elements.isEmpty()) {
-            String text = elements.first().text();
-            String price = text.split("\\s+")[1];
-            if (!disc.isOutOfStock()) {
-                disc.setPrice(parseNumber(price));
-            }
+        Elements buynew = document.select("#buyNewSection");
+        if (!buynew.isEmpty()) {
+            disc.setPrice(parseNumber(buynew.first().text()));
         }
     }
 
