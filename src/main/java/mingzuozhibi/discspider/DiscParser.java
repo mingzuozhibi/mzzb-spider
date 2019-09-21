@@ -20,16 +20,7 @@ public class DiscParser {
 
     private static Pattern patternOfRank = Pattern.compile(" - ([,\\d]+)位");
     private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
-    private static Pattern patternOfDateOfBuyset;
-
-    static {
-        String regex = "\\(" +
-            "(?<year>\\d{4})\\D+" +
-            "(?<month>\\d{1,2})\\D+" +
-            "(?<dom>\\d{1,2})日?" +
-            "発売予定\\)";
-        patternOfDateOfBuyset = Pattern.compile(regex);
-    }
+    private static Pattern patternOfDateOfPreOrder = Pattern.compile("(?<month>\\d{1,2})月 (?<dom>\\d{1,2}), (?<year>\\d{4})日にリリース");
 
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -260,9 +251,12 @@ public class DiscParser {
      */
 
     private void parseDateOfBuyset(Document document) {
-        Matcher matcher = patternOfDateOfBuyset.matcher(document.select("#productAlert_feature_div").text());
-        if (matcher.find()) {
-            setDate(matcher);
+        for (Element element : document.select(".bundle-components .bundle-comp-preorder")) {
+            Matcher matcher = patternOfDateOfPreOrder.matcher(element.text());
+            if (matcher.find()) {
+                setDate(matcher);
+                return;
+            }
         }
     }
 
