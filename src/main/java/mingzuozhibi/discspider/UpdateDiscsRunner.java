@@ -38,17 +38,20 @@ public class UpdateDiscsRunner {
     @Scheduled(cron = "0 2 1/4 * * ?")
     public void startFullUpdate() {
         jmsMessage.notify("计划任务：开始全量更新");
-        if (!running.compareAndSet(false, true)) {
-            jmsMessage.warning("任务终止：已有其他更新");
-            return;
-        }
         List<String> asins = listOps.range("need.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
             jmsMessage.warning("任务终止：无可更新数据");
         } else {
             runWithDaemon(jmsMessage, "全量更新", () -> {
-                runFetchDiscs(asins, true);
-                running.set(false);
+                if (!running.compareAndSet(false, true)) {
+                    jmsMessage.warning("任务终止：已有其他更新");
+                    return;
+                }
+                try {
+                    runFetchDiscs(asins, true);
+                } finally {
+                    running.set(false);
+                }
             });
         }
     }
@@ -57,17 +60,20 @@ public class UpdateDiscsRunner {
     @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
         jmsMessage.notify("计划任务：开始补充更新");
-        if (!running.compareAndSet(false, true)) {
-            jmsMessage.warning("任务终止：已有其他更新");
-            return;
-        }
         List<String> asins = listOps.range("next.update.asins", 0, -1);
         if (asins == null || asins.isEmpty()) {
             jmsMessage.notify("任务终止：无可更新数据");
         } else {
             runWithDaemon(jmsMessage, "补充更新", () -> {
-                runFetchDiscs(asins, false);
-                running.set(false);
+                if (!running.compareAndSet(false, true)) {
+                    jmsMessage.warning("任务终止：已有其他更新");
+                    return;
+                }
+                try {
+                    runFetchDiscs(asins, false);
+                } finally {
+                    running.set(false);
+                }
             });
         }
     }

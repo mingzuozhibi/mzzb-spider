@@ -13,7 +13,7 @@ import javax.annotation.Resource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 
 import static mingzuozhibi.common.spider.SpiderCdp4j.doInSessionFactory;
 import static mingzuozhibi.common.spider.SpiderCdp4j.waitResult;
@@ -25,6 +25,8 @@ public class DiscSpider {
 
     @Autowired
     private JmsMessage jmsMessage;
+
+    private ThreadLocal<DiscParser> discParser = ThreadLocal.withInitial(() -> new DiscParser(jmsMessage));
 
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;
@@ -82,21 +84,17 @@ public class DiscSpider {
 
         try {
             // 解析数据
-            DiscParser parser = new DiscParser(content);
-            parser.getMessages().forEach(message -> {
-                jmsMessage.warning("解析信息：[%s][%s]", asin, message);
-            });
-
-            Disc disc = parser.getDisc();
+            Optional<Disc> discRef = discParser.get().parse(asin, content);
 
             // 数据异常
-            if (!Objects.equals(disc.getAsin(), asin)) {
+            if (!discRef.isPresent()) {
                 writeContent(content, asin);
                 recorder.jmsFailedRow(asin, "页面数据未通过校验");
                 return Result.ofErrorMessage("页面数据未通过校验");
             }
 
             // 解析成功
+            Disc disc = discRef.get();
             Integer prevRank = hashOps.get("asin.rank.hash", asin);
             Integer thisRank = disc.getRank();
             recorder.jmsSuccessRow(asin, prevRank + " => " + thisRank);
