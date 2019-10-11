@@ -76,7 +76,7 @@ public class DiscParser {
         parseStockAndPrice(document);
 
         if (!disc.isOutOfStock() && Objects.isNull(disc.getPrice())) {
-            jmsMessage.warning("解析信息：[%s][未发现碟片价格]", asin);
+            jmsMessage.info("解析信息：[%s][未发现碟片价格]", asin);
         }
 
         /*
