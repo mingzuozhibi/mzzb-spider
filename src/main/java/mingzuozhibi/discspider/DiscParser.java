@@ -63,7 +63,7 @@ public class DiscParser {
 
         parseRankAndTitle(document);
 
-        if (StringUtils.isEmpty(disc.getTitle())) {
+        if (!StringUtils.hasText(disc.getTitle())) {
             jmsMessage.warning("解析信息：[%s][未发现碟片标题]", asin);
             return Optional.empty();
         }
