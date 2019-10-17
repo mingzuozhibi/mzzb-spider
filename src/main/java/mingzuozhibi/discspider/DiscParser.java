@@ -215,6 +215,7 @@ public class DiscParser {
             boolean isDVD = title.contains("[DVD]");
             boolean hasBD = title.contains("Blu-ray");
             boolean hasDVD = title.contains("DVD");
+            boolean likeBD = title.contains("BD");
             if (isBD && !isDVD) {
                 disc.setType("Bluray");
                 jmsMessage.info("解析信息：[%s][推测类型为BD]", asin);
@@ -233,6 +234,11 @@ public class DiscParser {
             if (hasDVD && !hasBD) {
                 jmsMessage.info("解析信息：[%s][推测类型为DVD]", asin);
                 disc.setType("Dvd");
+                return;
+            }
+            if (likeBD) {
+                jmsMessage.notify("解析信息：[%s][疑似类型为BD]", asin);
+                disc.setType("Bluray");
                 return;
             }
             jmsMessage.warning("解析信息：[%s][推测类型为DVD或BD]", asin);
