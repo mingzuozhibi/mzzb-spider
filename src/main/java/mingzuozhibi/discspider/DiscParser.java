@@ -108,7 +108,7 @@ public class DiscParser {
                 disc.setAsin(line.substring(6));
             }
             // check date
-            if (line.startsWith("発売日") || line.startsWith("CD")) {
+            if (line.startsWith("発売日") || line.startsWith("CD") || line.startsWith("Blu-ray Audio")) {
                 Matcher matcher = patternOfDate.matcher(line);
                 if (matcher.find()) {
                     setDate(matcher);
