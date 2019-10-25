@@ -63,7 +63,7 @@ public class DiscParser {
 
         parseRankAndTitle(document);
 
-        if (StringUtils.isEmpty(disc.getTitle())) {
+        if (!StringUtils.hasText(disc.getTitle())) {
             jmsMessage.warning("解析信息：[%s][未发现碟片标题]", asin);
             return Optional.empty();
         }
@@ -76,7 +76,7 @@ public class DiscParser {
         parseStockAndPrice(document);
 
         if (!disc.isOutOfStock() && Objects.isNull(disc.getPrice())) {
-            jmsMessage.warning("解析信息：[%s][未发现碟片价格]", asin);
+            jmsMessage.info("解析信息：[%s][未发现碟片价格]", asin);
         }
 
         /*
@@ -108,7 +108,7 @@ public class DiscParser {
                 disc.setAsin(line.substring(6));
             }
             // check date
-            if (line.startsWith("発売日") || line.startsWith("CD")) {
+            if (line.startsWith("発売日") || line.startsWith("CD") || line.startsWith("Blu-ray Audio")) {
                 Matcher matcher = patternOfDate.matcher(line);
                 if (matcher.find()) {
                     setDate(matcher);
@@ -215,6 +215,7 @@ public class DiscParser {
             boolean isDVD = title.contains("[DVD]");
             boolean hasBD = title.contains("Blu-ray");
             boolean hasDVD = title.contains("DVD");
+            boolean likeBD = title.contains("BD");
             if (isBD && !isDVD) {
                 disc.setType("Bluray");
                 jmsMessage.info("解析信息：[%s][推测类型为BD]", asin);
@@ -233,6 +234,11 @@ public class DiscParser {
             if (hasDVD && !hasBD) {
                 jmsMessage.info("解析信息：[%s][推测类型为DVD]", asin);
                 disc.setType("Dvd");
+                return;
+            }
+            if (likeBD) {
+                jmsMessage.notify("解析信息：[%s][疑似类型为BD]", asin);
+                disc.setType("Bluray");
                 return;
             }
             jmsMessage.warning("解析信息：[%s][推测类型为DVD或BD]", asin);

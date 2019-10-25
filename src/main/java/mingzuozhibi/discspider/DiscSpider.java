@@ -78,8 +78,13 @@ public class DiscSpider {
 
         // 发现反爬
         if (hasAmazonNoSpider(content)) {
-            recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
-            return Result.ofErrorMessage("发现日亚反爬虫系统");
+            if (content.contains("何かお探しですか？")) {
+                recorder.jmsFailedRow(asin, "可能该碟片已下架");
+                return Result.ofErrorMessage("可能该碟片已下架");
+            } else {
+                recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
+                return Result.ofErrorMessage("发现日亚反爬虫系统");
+            }
         }
 
         try {
