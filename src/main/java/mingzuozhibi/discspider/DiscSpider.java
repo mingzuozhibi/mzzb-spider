@@ -80,8 +80,10 @@ public class DiscSpider {
         if (hasAmazonNoSpider(content)) {
             if (content.contains("何かお探しですか？")) {
                 recorder.jmsSuccessRow(asin, "可能该碟片已下架");
-                jmsMessage.warning("数据异常：可能该碟片已下架[%s]", asin);
-                return Result.ofErrorMessage("可能该碟片已下架");
+                Disc disc = new Disc();
+                disc.setAsin(asin);
+                disc.setOffTheShelf(true);
+                return Result.ofContent(disc);
             } else {
                 recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
                 return Result.ofErrorMessage("发现日亚反爬虫系统");
