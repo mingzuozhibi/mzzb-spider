@@ -18,7 +18,7 @@ import static mingzuozhibi.common.model.Result.formatErrorCause;
 
 public class DiscParser {
 
-    private static Pattern patternOfRank = Pattern.compile(" - ([,\\d]+)位");
+    private static Pattern patternOfRank = Pattern.compile("ベストセラーランキング - ([0-9,]+)位DVD");
     private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
     private static Pattern patternOfDateOfPreOrder = Pattern.compile("(?<month>\\d{1,2})月 (?<dom>\\d{1,2}), (?<year>\\d{4})日にリリース");
 
@@ -45,7 +45,7 @@ public class DiscParser {
          * 解析发售日期，套装商品解析不到
          */
 
-        parseAsinAndDate(document);
+        parseAsinAndDateAndRank(document);
 
         if (StringUtils.isEmpty(disc.getAsin())) {
             jmsMessage.warning("解析信息：[%s][未发现商品编号]", asin);
@@ -61,7 +61,7 @@ public class DiscParser {
          * 解析碟片标题，碟片标题应该存在
          */
 
-        parseRankAndTitle(document);
+        parseTitle(document);
 
         if (!StringUtils.hasText(disc.getTitle())) {
             jmsMessage.warning("解析信息：[%s][未发现碟片标题]", asin);
@@ -97,15 +97,15 @@ public class DiscParser {
     }
 
     /*
-     * 解析商品编号和发售日期
+     * 解析商品编号和发售日期和碟片排名
      */
 
-    private void parseAsinAndDate(Document document) {
-        for (Element element : document.select("td.bucket>div.content li")) {
+    private void parseAsinAndDateAndRank(Document document) {
+        for (Element element : document.select("#detailBulletsWrapper_feature_div span.a-list-item")) {
             String line = element.text();
             // check asin
-            if (line.startsWith("ASIN: ")) {
-                disc.setAsin(line.substring(6));
+            if (line.startsWith("ASIN")) {
+                disc.setAsin(line.substring(line.length() - 10));
             }
             // check date
             if (line.startsWith("発売日") || line.startsWith("CD") || line.startsWith("Blu-ray Audio")) {
@@ -114,19 +114,21 @@ public class DiscParser {
                     setDate(matcher);
                 }
             }
+            // check rank
+            if (line.startsWith("ベストセラーランキング")) {
+                Matcher matcher = patternOfRank.matcher(line);
+                if (matcher.find()) {
+                    disc.setRank(parseNumber(matcher.group(1)));
+                }
+            }
         }
     }
 
     /*
-     * 解析碟片排名和碟片标题
+     * 解析碟片标题
      */
 
-    private void parseRankAndTitle(Document document) {
-        // parse rank
-        Matcher matcher = patternOfRank.matcher(document.select("#SalesRank").text());
-        if (matcher.find()) {
-            disc.setRank(parseNumber(matcher.group(1)));
-        }
+    private void parseTitle(Document document) {
         // parse title
         String fullTitle = document.select("#productTitle").text();
         disc.setTitle(fullTitle.substring(0, Math.min(fullTitle.length(), 500)));
