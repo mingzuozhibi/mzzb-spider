@@ -18,7 +18,7 @@ import static mingzuozhibi.common.model.Result.formatErrorCause;
 
 public class DiscParser {
 
-    private static Pattern patternOfRank = Pattern.compile("ベストセラーランキング - ([0-9,]+)位");
+    private static Pattern patternOfRank = Pattern.compile("- ([0-9,]+)位");
     private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
     private static Pattern patternOfDateOfPreOrder = Pattern.compile("(?<month>\\d{1,2})月 (?<dom>\\d{1,2}), (?<year>\\d{4})日にリリース");
 
@@ -115,7 +115,7 @@ public class DiscParser {
                 }
             }
             // check rank
-            if (line.startsWith("ベストセラーランキング")) {
+            if (line.startsWith("Amazon")) {
                 Matcher matcher = patternOfRank.matcher(line);
                 if (matcher.find()) {
                     disc.setRank(parseNumber(matcher.group(1)));
