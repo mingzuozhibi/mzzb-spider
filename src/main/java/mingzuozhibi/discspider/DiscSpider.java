@@ -66,7 +66,7 @@ public class DiscSpider {
         recorder.jmsStartUpdateRow(asin);
 
         // 开始抓取
-        Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
+        Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP");
 
         // 抓取失败
         if (recorder.checkUnfinished(asin, bodyResult)) {
