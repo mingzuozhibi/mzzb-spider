@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
 import mingzuozhibi.common.spider.SpiderRecorder;
+import org.jsoup.Connection.Response;
+import org.jsoup.HttpStatusException;
+import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.stereotype.Component;
@@ -14,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static mingzuozhibi.common.spider.SpiderJsoup.waitRequest;
 import static mingzuozhibi.common.spider.SpiderRecorder.writeContent;
 
 @Slf4j
@@ -69,8 +71,28 @@ public class DiscSpider {
         recorder.jmsStartUpdateRow(asin);
 
         // 开始抓取
-        Result<String> bodyResult = waitRequest("https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP",
-            connection -> connection.maxBodySize(10 * 1024 * 1024));
+        String url = "https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP";
+
+        Result<String> bodyResult = new Result<>();
+        int retry = 0;
+        while (retry < 3) {
+            try {
+                Response execute = Jsoup.connect(url)
+                    .ignoreContentType(true)
+                    .maxBodySize(10 * 1024 * 1024)
+                    .execute();
+                bodyResult.setContent(execute.body());
+                break;
+            } catch (Exception e) {
+                if (e instanceof HttpStatusException) {
+                    if (((HttpStatusException) e).getStatusCode() == 404) {
+                        return maybeOffTheShelf(recorder, asin);
+                    }
+                }
+                bodyResult.pushError(e);
+                ++retry;
+            }
+        }
 
         // 抓取失败
         if (recorder.checkUnfinished(asin, bodyResult)) {
@@ -83,11 +105,7 @@ public class DiscSpider {
         // 发现反爬
         if (hasAmazonNoSpider(content)) {
             if (content.contains("何かお探しですか？")) {
-                recorder.jmsSuccessRow(asin, "可能该碟片已下架");
-                Disc disc = new Disc();
-                disc.setAsin(asin);
-                disc.setOffTheShelf(true);
-                return Result.ofContent(disc);
+                return maybeOffTheShelf(recorder, asin);
             } else {
                 recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
                 return Result.ofErrorMessage("发现日亚反爬虫系统");
@@ -119,6 +137,14 @@ public class DiscSpider {
             log.warn("parsing error", e);
             return Result.ofErrorCause(e);
         }
+    }
+
+    private Result<Disc> maybeOffTheShelf(SpiderRecorder recorder, String asin) {
+        recorder.jmsSuccessRow(asin, "可能该碟片已下架");
+        Disc disc = new Disc();
+        disc.setAsin(asin);
+        disc.setOffTheShelf(true);
+        return Result.ofContent(disc);
     }
 
     private boolean hasAmazonNoSpider(String content) {
