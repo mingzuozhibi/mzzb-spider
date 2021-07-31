@@ -47,11 +47,20 @@ public class DiscSpider {
             if (!result.isUnfinished()) {
                 discInfos.put(asin, result.getContent());
             }
+            threadSleep(2000);
         }
 
         recorder.jmsSummary();
         recorder.jmsEndUpdate();
         return discInfos;
+    }
+
+    private void threadSleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @SuppressWarnings("unchecked")
