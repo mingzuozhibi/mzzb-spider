@@ -42,12 +42,12 @@ public class DiscSpider {
 
         Map<String, Disc> discInfos = new LinkedHashMap<>();
         for (String asin : asins) {
+            threadSleep();
             if (recorder.checkBreakCount(5)) break;
             Result<Disc> result = doUpdateDisc(recorder, asin);
             if (!result.isUnfinished()) {
                 discInfos.put(asin, result.getContent());
             }
-            threadSleep(2000);
         }
 
         recorder.jmsSummary();
@@ -55,9 +55,9 @@ public class DiscSpider {
         return discInfos;
     }
 
-    private void threadSleep(int millis) {
+    private void threadSleep() {
         try {
-            Thread.sleep(millis);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -69,7 +69,8 @@ public class DiscSpider {
         recorder.jmsStartUpdateRow(asin);
 
         // 开始抓取
-        Result<String> bodyResult = waitRequest("https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP");
+        Result<String> bodyResult = waitRequest("https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP",
+            connection -> connection.maxBodySize(10 * 1024 * 1024));
 
         // 抓取失败
         if (recorder.checkUnfinished(asin, bodyResult)) {
