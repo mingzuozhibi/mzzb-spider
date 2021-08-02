@@ -74,29 +74,24 @@ public class DiscSpider {
         String url = "https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP";
 
         Result<String> bodyResult = new Result<>();
-        int retry = 0;
-        while (retry < 3) {
-            try {
-                Response execute = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36")
-                    .referrer("https://www.google.com/")
-                    .ignoreContentType(true)
-                    .maxBodySize(10 * 1024 * 1024)
-                    .execute();
-                bodyResult.setContent(execute.body());
-                break;
-            } catch (Exception e) {
-                if (e instanceof HttpStatusException) {
-                    HttpStatusException he = (HttpStatusException) e;
-                    if (he.getStatusCode() == 404) {
-                        return maybeOffTheShelf(recorder, asin);
-                    }
-                    return Result.ofErrorMessage(
-                        String.format("HttpStatusException: %s, code=%d", he.getMessage(), he.getStatusCode())
-                    );
+        try {
+            Response execute = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36")
+                .referrer("https://www.google.com/")
+                .ignoreContentType(true)
+                .maxBodySize(10 * 1024 * 1024)
+                .execute();
+            bodyResult.setContent(execute.body());
+        } catch (Exception e) {
+            if (e instanceof HttpStatusException) {
+                HttpStatusException he = (HttpStatusException) e;
+                if (he.getStatusCode() == 404) {
+                    return maybeOffTheShelf(recorder, asin);
                 }
+                String newMessage = he.getMessage() + ", code=" + he.getStatusCode();
+                bodyResult.pushError(new HttpStatusException(newMessage, he.getStatusCode(), he.getUrl()));
+            } else {
                 bodyResult.pushError(e);
-                ++retry;
             }
         }
 
@@ -109,7 +104,9 @@ public class DiscSpider {
         String content = bodyResult.getContent();
 
         // 发现反爬
-        if (hasAmazonNoSpider(content)) {
+        if (
+
+            hasAmazonNoSpider(content)) {
             if (content.contains("何かお探しですか？")) {
                 return maybeOffTheShelf(recorder, asin);
             } else {
@@ -136,13 +133,15 @@ public class DiscSpider {
             recorder.jmsSuccessRow(asin, prevRank + " => " + thisRank);
             return Result.ofContent(disc);
 
-        } catch (Exception e) {
+        } catch (
+            Exception e) {
             // 捕获异常
             recorder.jmsErrorRow(asin, e);
             writeContent(content, asin);
             log.warn("parsing error", e);
             return Result.ofErrorCause(e);
         }
+
     }
 
     private Result<Disc> maybeOffTheShelf(SpiderRecorder recorder, String asin) {
