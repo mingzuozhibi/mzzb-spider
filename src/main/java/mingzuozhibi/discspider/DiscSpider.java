@@ -59,7 +59,7 @@ public class DiscSpider {
 
     private void threadSleep() {
         try {
-            Thread.sleep(3000);
+            Thread.sleep(4000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -78,6 +78,8 @@ public class DiscSpider {
         while (retry < 3) {
             try {
                 Response execute = Jsoup.connect(url)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36")
+                    .referrer("https://www.google.com/")
                     .ignoreContentType(true)
                     .maxBodySize(10 * 1024 * 1024)
                     .execute();
