@@ -85,9 +85,13 @@ public class DiscSpider {
                 break;
             } catch (Exception e) {
                 if (e instanceof HttpStatusException) {
-                    if (((HttpStatusException) e).getStatusCode() == 404) {
+                    HttpStatusException he = (HttpStatusException) e;
+                    if (he.getStatusCode() == 404) {
                         return maybeOffTheShelf(recorder, asin);
                     }
+                    return Result.ofErrorMessage(
+                        String.format("HttpStatusException: %s, code=%d", he.getMessage(), he.getStatusCode())
+                    );
                 }
                 bodyResult.pushError(e);
                 ++retry;
