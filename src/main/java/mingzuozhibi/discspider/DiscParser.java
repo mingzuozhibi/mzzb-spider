@@ -156,38 +156,14 @@ public class DiscParser {
      */
 
     private void parseTypeAndBuyset(Document document) {
-        Elements elements = document.select("li.swatchElement.selected a>span");
-        if (!elements.isEmpty()) {
-            parseTypeBySwatch(elements.first().text().trim());
-        }
+        parseTypeByLine(document);
 
         if (Objects.isNull(disc.getType())) {
-            parseTypeByLine(document);
+            parseTypeBySwatch(document);
         }
 
         if (Objects.isNull(disc.getType())) {
             tryGuessType(document);
-        }
-    }
-
-    private void parseTypeBySwatch(String type) {
-        switch (type) {
-            case "3D":
-            case "4K":
-            case "Blu-ray":
-                disc.setType("Bluray");
-                return;
-            case "DVD":
-                disc.setType("Dvd");
-                return;
-            case "CD":
-                disc.setType("Cd");
-                return;
-            case "セット買い":
-                setBuyset();
-                break;
-            default:
-                jmsMessage.warning("解析信息：[%s][未知碟片类型=%s]", asin, type);
         }
     }
 
@@ -208,7 +184,26 @@ public class DiscParser {
                     return;
             }
         }
-        jmsMessage.info("解析信息：[%s][未发现碟片类型]", asin);
+    }
+
+    private void parseTypeBySwatch(Document document) {
+        Elements elements = document.select("li.swatchElement.selected a>span");
+        if (elements.size() > 0) {
+            String type = elements.first().text().trim();
+            switch (type) {
+                case "3D":
+                case "4K":
+                case "Blu-ray":
+                    disc.setType("Bluray");
+                    break;
+                case "DVD":
+                    disc.setType("Dvd");
+                    break;
+                case "CD":
+                    disc.setType("Cd");
+                    break;
+            }
+        }
     }
 
     private void tryGuessType(Document document) {
