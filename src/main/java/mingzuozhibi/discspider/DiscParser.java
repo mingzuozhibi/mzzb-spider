@@ -20,8 +20,7 @@ public class DiscParser {
 
     private static Pattern patternOfRank = Pattern.compile("- ([0-9,]+)位");
     private static Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
-    private static Pattern patternOfDateOfPreOrder = Pattern.compile("(?<month>\\d{1,2})月 (?<dom>\\d{1,2}), (?<year>\\d{4})日にリリース");
-
+    private static Pattern patternOfDate2 = Pattern.compile("(?<year>\\d{4})年(?<month>\\d{1,2})月(?<dom>\\d{1,2})日");
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private JmsMessage jmsMessage;
@@ -86,8 +85,12 @@ public class DiscParser {
 
         parseTypeAndBuyset(document);
 
-        if (disc.isBuyset()) {
-            parseDateOfBuyset(document);
+        if (Objects.isNull(disc.getDate())) {
+            if (disc.isBuyset()) {
+                parseDateOfBuyset(document);
+            } else {
+                parseDateOfAvailability(document);
+            }
         }
         if (Objects.isNull(disc.getDate())) {
             jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
@@ -153,9 +156,9 @@ public class DiscParser {
      */
 
     private void parseTypeAndBuyset(Document document) {
-        Elements elements = document.select(".swatchElement.selected");
+        Elements elements = document.select("li.swatchElement.selected a>span");
         if (!elements.isEmpty()) {
-            parseTypeBySwatch(elements.first().text());
+            parseTypeBySwatch(elements.first().text().trim());
         }
 
         if (Objects.isNull(disc.getType())) {
@@ -167,8 +170,7 @@ public class DiscParser {
         }
     }
 
-    private void parseTypeBySwatch(String swatch) {
-        String type = swatch.split("\\s+")[0];
+    private void parseTypeBySwatch(String type) {
         switch (type) {
             case "3D":
             case "4K":
@@ -257,10 +259,22 @@ public class DiscParser {
 
     private void parseDateOfBuyset(Document document) {
         for (Element element : document.select(".bundle-components .bundle-comp-preorder")) {
-            Matcher matcher = patternOfDateOfPreOrder.matcher(element.text());
+            Matcher matcher = patternOfDate2.matcher(element.text());
             if (matcher.find()) {
                 setDate(matcher);
+                jmsMessage.info("解析信息：[%s][发现套装商品发售日期]", asin);
                 return;
+            }
+        }
+    }
+
+    private void parseDateOfAvailability(Document document) {
+        Elements elements = document.select("#availability>span.a-size-medium.a-color-success");
+        if (elements.size() == 1) {
+            Matcher matcher = patternOfDate2.matcher(elements.first().text());
+            if (matcher.find()) {
+                setDate(matcher);
+                jmsMessage.info("解析信息：[%s][备用方法设置发售日期]", asin);
             }
         }
     }
