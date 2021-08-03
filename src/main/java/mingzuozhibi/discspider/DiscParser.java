@@ -253,12 +253,12 @@ public class DiscParser {
      */
 
     private void parseDateOfBuyset(Document document) {
-        for (Element element : document.select(".bundle-components .bundle-comp-preorder")) {
-            Matcher matcher = patternOfDate2.matcher(element.text());
+        Elements elements = document.select("#bundle-v2-btf-component-release-date-label-1");
+        if (elements.size() == 1) {
+            Matcher matcher = patternOfDate2.matcher(elements.first().text());
             if (matcher.find()) {
                 setDate(matcher);
                 jmsMessage.info("解析信息：[%s][发现套装商品发售日期]", asin);
-                return;
             }
         }
     }
