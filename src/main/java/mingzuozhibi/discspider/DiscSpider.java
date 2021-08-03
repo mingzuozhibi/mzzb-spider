@@ -59,7 +59,6 @@ public class DiscSpider {
         return discInfos;
     }
 
-    @SuppressWarnings("unchecked")
     private Result<Disc> doUpdateDisc(SessionFactory factory, SpiderRecorder recorder, String asin) {
         // 记录开始
         recorder.jmsStartUpdateRow(asin);
@@ -91,6 +90,10 @@ public class DiscSpider {
             }
         }
 
+        return parser(recorder, asin, content);
+    }
+
+    private Result<Disc> parser(SpiderRecorder recorder, String asin, String content) {
         try {
             // 解析数据
             Optional<Disc> discRef = discParser.get().parse(asin, content);
