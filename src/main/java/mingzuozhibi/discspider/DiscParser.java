@@ -93,7 +93,11 @@ public class DiscParser {
             }
         }
         if (Objects.isNull(disc.getDate())) {
-            jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
+            if (disc.isBuyset()) {
+                jmsMessage.info("解析信息：[%s][未发现套装发售日期]", asin);
+            } else {
+                jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
+            }
         }
 
         return Optional.of(disc);
@@ -265,7 +269,7 @@ public class DiscParser {
             Matcher matcher = patternOfDate2.matcher(elements.first().text());
             if (matcher.find()) {
                 setDate(matcher);
-                jmsMessage.info("解析信息：[%s][发现套装商品发售日期]", asin);
+                jmsMessage.info("解析信息：[%s][发现套装发售日期]", asin);
             }
         }
     }
@@ -276,7 +280,7 @@ public class DiscParser {
             Matcher matcher = patternOfDate2.matcher(elements.first().text());
             if (matcher.find()) {
                 setDate(matcher);
-                jmsMessage.info("解析信息：[%s][备用方法设置发售日期]", asin);
+                jmsMessage.info("解析信息：[%s][发现疑似发售日期]", asin);
             }
         }
     }
