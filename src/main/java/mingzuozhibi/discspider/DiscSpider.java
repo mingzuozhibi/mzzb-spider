@@ -44,11 +44,18 @@ public class DiscSpider {
 
         Map<String, Disc> discInfos = new LinkedHashMap<>();
         for (String asin : asins) {
-            threadSleep();
+            threadSleep(4000);
             if (recorder.checkBreakCount(5)) break;
             Result<Disc> result = doUpdateDisc(recorder, asin);
             if (!result.isUnfinished()) {
                 discInfos.put(asin, result.getContent());
+            } else {
+                if (result.getErrorMessage().contains("code=503")) {
+                    threadSleep(10000);
+                }
+                if (result.getErrorMessage().contains("日亚反爬虫")) {
+                    threadSleep(10000);
+                }
             }
         }
 
@@ -57,9 +64,9 @@ public class DiscSpider {
         return discInfos;
     }
 
-    private void threadSleep() {
+    private void threadSleep(int ms) {
         try {
-            Thread.sleep(4000);
+            Thread.sleep(ms);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

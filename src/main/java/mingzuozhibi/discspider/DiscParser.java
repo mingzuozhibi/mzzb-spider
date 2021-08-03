@@ -202,12 +202,19 @@ public class DiscParser {
                 case "CD":
                     disc.setType("Cd");
                     break;
+                case "セット買い":
+                    setBuyset();
+                    break;
             }
         }
     }
 
     private void tryGuessType(Document document) {
         String category = document.select("select.nav-search-dropdown option[selected]").text();
+        if (Objects.equals("ミュージック", category)) {
+            disc.setType("Cd");
+            return;
+        }
         if (Objects.equals("DVD", category)) {
             String title = document.select("#productTitle").text();
             boolean isBD = title.contains("[Blu-ray]");
