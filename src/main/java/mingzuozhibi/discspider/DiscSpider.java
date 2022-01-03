@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
 import mingzuozhibi.common.spider.SpiderRecorder;
+import org.jsoup.Connection.Response;
+import org.jsoup.HttpStatusException;
+import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.stereotype.Component;
@@ -33,11 +36,7 @@ public class DiscSpider {
 
     public Result<Disc> updateDisc(String asin) {
         SpiderRecorder recorder = new SpiderRecorder("碟片信息", 1, jmsMessage);
-        Result<Disc> result = new Result<>();
-        doInSessionFactory(factory -> {
-            result.syncResult(doUpdateDisc(factory, recorder, asin));
-        });
-        return result;
+        return doUpdateDisc(null, recorder, asin);
     }
 
     public Map<String, Disc> updateDiscs(List<String> asins) {
@@ -60,13 +59,18 @@ public class DiscSpider {
         return discInfos;
     }
 
-    @SuppressWarnings("unchecked")
     private Result<Disc> doUpdateDisc(SessionFactory factory, SpiderRecorder recorder, String asin) {
         // 记录开始
         recorder.jmsStartUpdateRow(asin);
 
         // 开始抓取
-        Result<String> bodyResult = waitResult(factory, "https://www.amazon.co.jp/dp/" + asin);
+        String url = "https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP";
+        Result<String> bodyResult;
+        if (factory != null) {
+            bodyResult = waitResult(factory, url);
+        } else {
+            bodyResult = waitResultJsoup(url);
+        }
 
         // 抓取失败
         if (recorder.checkUnfinished(asin, bodyResult)) {
@@ -79,14 +83,17 @@ public class DiscSpider {
         // 发现反爬
         if (hasAmazonNoSpider(content)) {
             if (content.contains("何かお探しですか？")) {
-                recorder.jmsFailedRow(asin, "可能该碟片已下架");
-                return Result.ofErrorMessage("可能该碟片已下架");
+                return maybeOffTheShelf(recorder, asin);
             } else {
                 recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
                 return Result.ofErrorMessage("发现日亚反爬虫系统");
             }
         }
 
+        return parser(recorder, asin, content);
+    }
+
+    private Result<Disc> parser(SpiderRecorder recorder, String asin, String content) {
         try {
             // 解析数据
             Optional<Disc> discRef = discParser.get().parse(asin, content);
@@ -112,6 +119,36 @@ public class DiscSpider {
             log.warn("parsing error", e);
             return Result.ofErrorCause(e);
         }
+    }
+
+    private Result<String> waitResultJsoup(String url) {
+        Result<String> result = new Result<>();
+        try {
+            Response execute = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36")
+                .referrer("https://www.google.com/")
+                .ignoreContentType(true)
+                .maxBodySize(10 * 1024 * 1024)
+                .execute();
+            result.setContent(execute.body());
+        } catch (Exception e) {
+            if (e instanceof HttpStatusException) {
+                HttpStatusException he = (HttpStatusException) e;
+                String newMessage = he.getMessage() + ", code=" + he.getStatusCode();
+                result.pushError(new HttpStatusException(newMessage, he.getStatusCode(), he.getUrl()));
+            } else {
+                result.pushError(e);
+            }
+        }
+        return result;
+    }
+
+    private Result<Disc> maybeOffTheShelf(SpiderRecorder recorder, String asin) {
+        recorder.jmsSuccessRow(asin, "可能该碟片已下架");
+        Disc disc = new Disc();
+        disc.setAsin(asin);
+        disc.setOffTheShelf(true);
+        return Result.ofContent(disc);
     }
 
     private boolean hasAmazonNoSpider(String content) {
