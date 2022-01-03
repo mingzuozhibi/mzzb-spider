@@ -13,6 +13,7 @@ public abstract class ThreadUtils {
                 callback.call();
             } catch (Throwable e) {
                 jmsMessage.warning("runWithDaemon [%s] error: %s", origin, Result.formatErrorCause(e));
+                log.warn("runWithDaemon " + origin + " error:", e);
             }
         });
         thread.setDaemon(true);
