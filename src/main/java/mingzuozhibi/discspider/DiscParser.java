@@ -1,11 +1,11 @@
 package mingzuozhibi.discspider;
 
 import mingzuozhibi.common.jms.JmsMessage;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -62,7 +62,7 @@ public class DiscParser {
 
         parseTitle(document);
 
-        if (!StringUtils.hasText(disc.getTitle())) {
+        if (StringUtils.isEmpty(disc.getTitle())) {
             jmsMessage.warning("解析信息：[%s][未发现碟片标题]", asin);
             return Optional.empty();
         }

@@ -26,7 +26,7 @@ public class BaseResponse {
 
     public void responseText(ServletResponse response, String content) {
         try {
-            response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
             response.setContentLength(bytes.length);
             response.getOutputStream().write(bytes);
