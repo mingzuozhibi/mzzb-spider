@@ -35,45 +35,28 @@ public class JmsMessage {
     }
 
     public void info(String message) {
-        sendMsgNotLog("info", message);
+        jmsService.convertAndSend("module.message", buildMsg("info", message));
         log.info("JMS -> {}: {}", "module.message", message);
     }
 
     public void success(String message) {
-        sendMsgNotLog("success", message);
+        jmsService.convertAndSend("module.message", buildMsg("success", message));
         log.info("JMS -> {}: {}", "module.message", message);
     }
 
     public void notify(String message) {
-        sendMsgNotLog("notify", message);
+        jmsService.convertAndSend("module.message", buildMsg("notify", message));
         log.info("JMS -> {}: {}", "module.message", message);
     }
 
     public void warning(String message) {
-        sendMsgNotLog("warning", message);
+        jmsService.convertAndSend("module.message", buildMsg("warning", message));
         log.warn("JMS -> {}: {}", "module.message", message);
     }
 
     public void danger(String message) {
-        sendMsgNotLog("danger", message);
+        jmsService.convertAndSend("module.message", buildMsg("danger", message));
         log.error("JMS -> {}: {}", "module.message", message);
-    }
-
-    public void sendMsgNotLog(String type, String message) {
-        jmsService.sendJsonNotLog("module.message", buildMsg(type, message));
-    }
-
-    public void sendMsgAndLogger(String type, String message) {
-        jmsService.sendJsonAndLogger("module.message", buildMsg(type, message), message);
-    }
-
-    public void sendMsgAndJmsLog(String type, String message) {
-        String jmsLog = String.format("[%s][%s]", type, message);
-        jmsService.sendJsonAndJmsLog("module.message", buildMsg(type, message), jmsLog);
-    }
-
-    public void sendMsgAndJmsLog(String type, String message, String jmsLog) {
-        jmsService.sendJsonAndJmsLog("module.message", buildMsg(type, message), jmsLog);
     }
 
     private String buildMsg(String type, String text) {

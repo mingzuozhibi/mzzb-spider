@@ -19,7 +19,7 @@ public class JmsConnect {
         root.addProperty("name", moduleName);
         root.addProperty("addr", moduleAddr);
         String json = root.toString();
-        jmsService.sendJsonAndJmsLog("module.connect", json);
+        jmsService.sendJson("module.connect", json);
     }
 
 }

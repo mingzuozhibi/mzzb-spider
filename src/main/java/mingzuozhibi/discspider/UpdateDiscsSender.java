@@ -37,7 +37,7 @@ public class UpdateDiscsSender {
             discs.forEach(json -> {
                 root.add(gson.fromJson(json, JsonObject.class));
             });
-            jmsService.sendJsonAndJmsLog("prev.update.discs", root.toString(), "size=" + discs.size());
+            jmsService.sendJson("prev.update.discs", root.toString(), "size=" + discs.size());
             jmsMessage.success("正在同步上次更新结果：共%d个", root.size());
         }
     }
@@ -52,7 +52,7 @@ public class UpdateDiscsSender {
             discs.forEach(json -> {
                 root.add(gson.fromJson(json, JsonObject.class));
             });
-            jmsService.sendJsonAndJmsLog("done.update.discs", root.toString(), "size=" + discs.size());
+            jmsService.sendJson("done.update.discs", root.toString(), "size=" + discs.size());
             jmsMessage.success("正在同步全量更新结果：共%d个", root.size());
         }
     }
