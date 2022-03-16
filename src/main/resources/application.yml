@@ -9,7 +9,10 @@ spring:
     user: admin
 
 ---
+
 spring:
-  profiles: pro
+  config:
+    activate:
+      on-profile: pro
   activemq:
     broker-url: tcp://mingzuozhibi.com:61616
