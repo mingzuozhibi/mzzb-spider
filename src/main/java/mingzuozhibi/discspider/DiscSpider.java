@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import mingzuozhibi.common.jms.JmsMessage;
 import mingzuozhibi.common.model.Result;
 import mingzuozhibi.common.spider.SpiderRecorder;
+import mingzuozhibi.common.spider.SpiderUtils;
 import org.jsoup.Connection.Response;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -64,7 +65,7 @@ public class DiscSpider {
         recorder.jmsStartUpdateRow(asin);
 
         // 开始抓取
-        String url = "https://www.amazon.co.jp/dp/" + asin + "?language=ja_JP";
+        String url = String.format(SpiderUtils.AMAZON_URL, asin, asin);
         Result<String> bodyResult;
         if (factory != null) {
             bodyResult = waitResult(factory, url);
@@ -85,6 +86,7 @@ public class DiscSpider {
             if (content.contains("何かお探しですか？")) {
                 return maybeOffTheShelf(recorder, asin);
             } else {
+                writeContent(content, asin);
                 recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
                 return Result.ofErrorMessage("发现日亚反爬虫系统");
             }
@@ -125,7 +127,7 @@ public class DiscSpider {
         Result<String> result = new Result<>();
         try {
             Response execute = Jsoup.connect(url)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36")
+                .userAgent(SpiderUtils.USER_AGENT)
                 .referrer("https://www.google.com/")
                 .ignoreContentType(true)
                 .maxBodySize(10 * 1024 * 1024)

@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -42,16 +41,11 @@ public abstract class SpiderCdp4j {
         }
     }
 
-    private static final String USER_AGENT =
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/76.0.3809.132 Safari/537.36";
-
     public static Result<String> waitResult(SessionFactory factory, String url) {
         Result<String> result = new Result<>();
         for (int retry = 0; retry < 3; retry++) {
             try (Session session = factory.create()) {
-                session.setUserAgent(USER_AGENT);
+                session.setUserAgent(SpiderUtils.USER_AGENT);
                 session.navigate(url);
                 session.waitDocumentReady(38000);
                 session.wait(2000);
@@ -62,13 +56,6 @@ public abstract class SpiderCdp4j {
             }
         }
         return result;
-    }
-
-    public static void threadSleep(int timeout) {
-        try {
-            TimeUnit.SECONDS.sleep(timeout);
-        } catch (InterruptedException ignored) {
-        }
     }
 
 }
