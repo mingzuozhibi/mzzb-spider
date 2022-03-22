@@ -45,6 +45,7 @@ public abstract class SpiderCdp4j {
         Result<String> result = new Result<>();
         for (int retry = 0; retry < 3; retry++) {
             try (Session session = factory.create()) {
+                session.clearCookies();
                 session.setUserAgent(SpiderUtils.USER_AGENT);
                 session.navigate(url);
                 session.waitDocumentReady(38000);

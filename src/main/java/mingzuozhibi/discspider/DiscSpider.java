@@ -65,7 +65,8 @@ public class DiscSpider {
         recorder.jmsStartUpdateRow(asin);
 
         // 开始抓取
-        String url = String.format(SpiderUtils.AMAZON_URL, asin, asin);
+        String url = SpiderUtils.getAmazonUrl(asin);
+        log.debug("{}: {}", asin, url);
         Result<String> bodyResult;
         if (factory != null) {
             bodyResult = waitResult(factory, url);
