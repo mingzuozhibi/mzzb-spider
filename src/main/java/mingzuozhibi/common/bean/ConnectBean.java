@@ -55,7 +55,7 @@ public class ConnectBean implements CommandLineRunner {
                 NetworkInterface networkInterface = networkInterfaces.nextElement();
                 for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
                     InetAddress address = interfaceAddress.getAddress();
-                    if (isNotLocalAddress(address)) {
+                    if (isNotLocalAddress(address) && isIPv4Address(address)) {
                         return Optional.of(address.getHostAddress());
                     }
                 }
@@ -72,6 +72,10 @@ public class ConnectBean implements CommandLineRunner {
             && !address.isAnyLocalAddress()
             && !address.isLinkLocalAddress()
             && !address.isMulticastAddress();
+    }
+
+    private boolean isIPv4Address(InetAddress address) {
+        return address.getHostAddress().matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
     }
 
 }
