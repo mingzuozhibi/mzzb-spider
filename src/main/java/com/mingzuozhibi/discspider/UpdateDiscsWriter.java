@@ -34,8 +34,8 @@ public class UpdateDiscsWriter {
             hashOps.delete("asin.rank.hash", asin);
         });
         Objects.requireNonNull(discs).forEach(json -> {
-            Disc disc = gson.fromJson(json, Disc.class);
-            hashOps.put("asin.rank.hash", disc.getAsin(), disc.getRank());
+            DiscUpdate discUpdate = gson.fromJson(json, DiscUpdate.class);
+            hashOps.put("asin.rank.hash", discUpdate.getAsin(), discUpdate.getRank());
         });
     }
 
@@ -47,22 +47,22 @@ public class UpdateDiscsWriter {
         listOps.trim("done.update.discs", 1, 0);
     }
 
-    public void pushDoneUpdateDiscs(List<Disc> discs) {
-        discs.forEach(discInfo -> {
+    public void pushDoneUpdateDiscs(List<DiscUpdate> discUpdates) {
+        discUpdates.forEach(discInfo -> {
             listOps.rightPush("done.update.discs", gson.toJson(discInfo));
         });
     }
 
-    public void pushPrevUpdateDiscs(List<Disc> discs) {
-        discs.forEach(discInfo -> {
+    public void pushPrevUpdateDiscs(List<DiscUpdate> discUpdates) {
+        discUpdates.forEach(discInfo -> {
             listOps.rightPush("prev.update.discs", gson.toJson(discInfo));
         });
     }
 
-    public void recordHistoryOfDate(List<Disc> discs) {
+    public void recordHistoryOfDate(List<DiscUpdate> discUpdates) {
         JsonObject history = new JsonObject();
         history.addProperty("date", LocalDateTime.now().toString());
-        history.add("updatedDiscs", gson.toJsonTree(discs));
+        history.add("updatedDiscs", gson.toJsonTree(discUpdates));
         listOps.leftPush("history.update.discs", history.toString());
         listOps.trim("history.update.discs", 0, 99);
     }

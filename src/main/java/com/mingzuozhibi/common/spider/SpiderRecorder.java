@@ -1,9 +1,9 @@
 package com.mingzuozhibi.common.spider;
 
 import com.mingzuozhibi.common.jms.JmsMessage;
+import com.mingzuozhibi.common.model.Result;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import com.mingzuozhibi.common.model.Result;
 
 import java.io.BufferedWriter;
 import java.io.File;

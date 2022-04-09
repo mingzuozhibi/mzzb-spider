@@ -1,8 +1,8 @@
 package com.mingzuozhibi.common.bean;
 
 import com.mingzuozhibi.common.jms.JmsConnect;
-import lombok.extern.slf4j.Slf4j;
 import com.mingzuozhibi.common.jms.JmsMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;

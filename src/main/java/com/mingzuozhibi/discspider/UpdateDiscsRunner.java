@@ -1,7 +1,7 @@
 package com.mingzuozhibi.discspider;
 
-import lombok.extern.slf4j.Slf4j;
 import com.mingzuozhibi.common.jms.JmsMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -84,7 +84,7 @@ public class UpdateDiscsRunner {
             updateDiscsWriter.resetAsinRankHash();
         }
 
-        Map<String, Disc> resultMap = discSpider.updateDiscs(asins);
+        Map<String, DiscUpdate> resultMap = discSpider.updateDiscs(asins);
 
         if (fullUpdate) {
             updateDiscsWriter.cleanDoneUpdateDiscs();
@@ -93,10 +93,10 @@ public class UpdateDiscsRunner {
             updateDiscsWriter.cleanPrevUpdateDiscs();
         }
 
-        List<Disc> updatedDiscs = new ArrayList<>(resultMap.values());
-        updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscs);
-        updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscs);
-        updateDiscsWriter.recordHistoryOfDate(updatedDiscs);
+        List<DiscUpdate> updatedDiscUpdates = new ArrayList<>(resultMap.values());
+        updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscUpdates);
+        updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscUpdates);
+        updateDiscsWriter.recordHistoryOfDate(updatedDiscUpdates);
         updateDiscsWriter.cleanNextUpdateAsins(resultMap.keySet());
         updateDiscsSender.sendPrevUpdateDiscs();
     }

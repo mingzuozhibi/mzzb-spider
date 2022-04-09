@@ -1,10 +1,10 @@
 package com.mingzuozhibi.common.spider;
 
+import com.mingzuozhibi.common.model.Result;
 import io.webfolder.cdp.Launcher;
 import io.webfolder.cdp.session.Session;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
-import com.mingzuozhibi.common.model.Result;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,20 +41,17 @@ public abstract class SpiderCdp4j {
         }
     }
 
-    public static Result<String> waitResult(SessionFactory factory, String url) {
+    public static Result<String> waitResultCdp4j(SessionFactory factory, String url) {
         Result<String> result = new Result<>();
-        for (int retry = 0; retry < 3; retry++) {
-            try (Session session = factory.create()) {
-                session.clearCookies();
-                session.setUserAgent(SpiderUtils.USER_AGENT);
-                session.navigate(url);
-                session.waitDocumentReady(38000);
-                session.wait(2000);
-                result.setContent(session.getOuterHtml("body"));
-                break;
-            } catch (Exception e) {
-                result.pushError(e);
-            }
+        try (Session session = factory.create()) {
+            session.clearCookies();
+            session.setUserAgent(SpiderUtils.USER_AGENT);
+            session.navigate(url);
+            session.waitDocumentReady(18000);
+            session.wait(2000);
+            result.setContent(session.getOuterHtml("body"));
+        } catch (Exception e) {
+            result.pushError(e);
         }
         return result;
     }

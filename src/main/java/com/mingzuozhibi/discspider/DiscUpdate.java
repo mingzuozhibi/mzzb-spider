@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class Disc {
+public class DiscUpdate {
 
     private String asin;
     private String type;
