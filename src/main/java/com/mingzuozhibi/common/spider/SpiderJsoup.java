@@ -2,7 +2,6 @@ package com.mingzuozhibi.common.spider;
 
 import com.mingzuozhibi.common.model.Result;
 import org.jsoup.Connection;
-import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 
 public abstract class SpiderJsoup {
@@ -18,13 +17,7 @@ public abstract class SpiderJsoup {
                 .execute();
             result.setContent(execute.body());
         } catch (Exception e) {
-            if (e instanceof HttpStatusException) {
-                HttpStatusException he = (HttpStatusException) e;
-                String newMessage = he.getMessage() + ", code=" + he.getStatusCode();
-                result.pushError(new HttpStatusException(newMessage, he.getStatusCode(), he.getUrl()));
-            } else {
-                result.pushError(e);
-            }
+            result.pushError(e);
         }
         return result;
     }
