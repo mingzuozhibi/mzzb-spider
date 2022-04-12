@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.List;
+
+import static com.mingzuozhibi.utils.FormatUtils.fmtDateTime;
 
 @RestController
 public class UpdateDiscsSender {
@@ -42,18 +45,18 @@ public class UpdateDiscsSender {
         }
     }
 
-    @GetMapping("/sendDoneUpdateDiscs")
-    public void sendDoneUpdateDiscs() {
-        List<String> discs = listOpts.range("done.update.discs", 0, -1);
-        if (discs == null || discs.size() == 0) {
-            jmsMessage.warning("无法同步全量更新结果：没有数据");
-        } else {
-            JsonArray root = new JsonArray();
-            discs.forEach(json -> {
-                root.add(gson.fromJson(json, JsonObject.class));
-            });
-            jmsService.sendJson("done.update.discs", root.toString(), "size=" + discs.size());
-            jmsMessage.success("正在同步全量更新结果：共%d个", root.size());
+    @GetMapping("/sendLastUpdateDiscs")
+    public void sendLastUpdateDiscs() {
+        for (int index = 0; index < 100; index++) {
+            String json = listOpts.index("history.update.discs", index);
+            JsonObject object = gson.fromJson(json, JsonObject.class);
+            LocalDateTime date = gson.fromJson(object.get("date"), LocalDateTime.class);
+            JsonArray array = object.getAsJsonArray("updatedDiscs");
+            if (array.size() == 0) continue;
+            jmsService.sendJson("last.update.discs", json, "size=" + array.size());
+            jmsMessage.success("正在同步[%s]更新结果：共%d个",
+                date.format(fmtDateTime), array.size());
+            break;
         }
     }
 

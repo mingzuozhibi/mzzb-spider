@@ -8,20 +8,19 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.mingzuozhibi.spider.Result.formatErrorCause;
+import static com.mingzuozhibi.utils.FormatUtils.fmtDate;
 
 public class DiscParser {
 
     private static final Pattern patternOfRank = Pattern.compile("- ([0-9,]+)位");
     private static final Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
     private static final Pattern patternOfDate2 = Pattern.compile("(?<year>\\d{4})年(?<month>\\d{1,2})月(?<dom>\\d{1,2})日");
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final JmsMessage jmsMessage;
 
@@ -302,7 +301,7 @@ public class DiscParser {
             Integer.parseInt(matcher.group("year")),
             Integer.parseInt(matcher.group("month")),
             Integer.parseInt(matcher.group("dom"))
-        ).format(formatter);
+        ).format(fmtDate);
         discUpdate.setDate(date);
     }
 
