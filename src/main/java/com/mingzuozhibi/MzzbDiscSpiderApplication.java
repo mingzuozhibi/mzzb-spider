@@ -1,7 +1,7 @@
 package com.mingzuozhibi;
 
 import com.google.gson.Gson;
-import com.mingzuozhibi.common.gson.GsonFactory;
+import com.mingzuozhibi.commons.gson.GsonFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
