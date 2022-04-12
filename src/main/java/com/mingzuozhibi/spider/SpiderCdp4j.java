@@ -1,6 +1,5 @@
 package com.mingzuozhibi.spider;
 
-import com.mingzuozhibi.commons.model.Result;
 import io.webfolder.cdp.Launcher;
 import io.webfolder.cdp.session.Session;
 import io.webfolder.cdp.session.SessionFactory;

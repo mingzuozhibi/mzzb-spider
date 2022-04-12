@@ -1,6 +1,5 @@
 package com.mingzuozhibi.spider;
 
-import com.mingzuozhibi.commons.model.Result;
 import com.mingzuozhibi.commons.mylog.JmsMessage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +9,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import static com.mingzuozhibi.commons.model.Result.formatErrorCause;
+import static com.mingzuozhibi.spider.Result.formatErrorCause;
 
 @Slf4j
 @Getter

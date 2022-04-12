@@ -1,4 +1,4 @@
-package com.mingzuozhibi.commons.model;
+package com.mingzuozhibi.spider;
 
 import lombok.Getter;
 import lombok.Setter;

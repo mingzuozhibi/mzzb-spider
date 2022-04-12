@@ -1,6 +1,5 @@
 package com.mingzuozhibi.spider;
 
-import com.mingzuozhibi.commons.model.Result;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
 

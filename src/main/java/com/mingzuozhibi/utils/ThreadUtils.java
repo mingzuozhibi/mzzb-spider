@@ -1,7 +1,7 @@
 package com.mingzuozhibi.utils;
 
-import com.mingzuozhibi.commons.model.Result;
 import com.mingzuozhibi.commons.mylog.JmsMessage;
+import com.mingzuozhibi.spider.Result;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

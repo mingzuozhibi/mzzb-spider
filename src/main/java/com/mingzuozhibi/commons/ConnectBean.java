@@ -1,4 +1,4 @@
-package com.mingzuozhibi.commons.bean;
+package com.mingzuozhibi.commons;
 
 import com.mingzuozhibi.commons.mylog.JmsConnect;
 import com.mingzuozhibi.commons.mylog.JmsMessage;

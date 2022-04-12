@@ -1,6 +1,5 @@
 package com.mingzuozhibi.spider;
 
-import com.mingzuozhibi.commons.model.Result;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 

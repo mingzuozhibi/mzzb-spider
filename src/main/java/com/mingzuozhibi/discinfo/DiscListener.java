@@ -1,4 +1,4 @@
-package com.mingzuozhibi.discinfos;
+package com.mingzuozhibi.discinfo;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -34,8 +34,8 @@ public class DiscListener extends BaseController {
 
     @JmsListener(destination = "send.disc.update")
     public void listenDiscUpdate(String json) {
-        TypeToken<?> typeToken = TypeToken.getParameterized(SearchTask.class, DiscUpdate.class);
-        SearchTask<DiscUpdate> task = gson.fromJson(json, typeToken.getType());
+        TypeToken<?> typeToken = TypeToken.getParameterized(SearchTask.class, DiscInfo.class);
+        SearchTask<DiscInfo> task = gson.fromJson(json, typeToken.getType());
         SpiderRecorder recorder = new SpiderRecorder("碟片信息", 1, jmsMessage);
         jmsService.convertAndSend("back.disc.update", gson.toJson(
             discSpider.doUpdateDisc(null, recorder, task)

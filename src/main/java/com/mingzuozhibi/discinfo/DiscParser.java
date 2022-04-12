@@ -1,4 +1,4 @@
-package com.mingzuozhibi.discinfos;
+package com.mingzuozhibi.discinfo;
 
 import com.mingzuozhibi.commons.mylog.JmsMessage;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.mingzuozhibi.commons.model.Result.formatErrorCause;
+import static com.mingzuozhibi.spider.Result.formatErrorCause;
 
 public class DiscParser {
 
@@ -26,19 +26,19 @@ public class DiscParser {
     private final JmsMessage jmsMessage;
 
     private String asin;
-    private DiscUpdate discUpdate;
+    private DiscInfo discUpdate;
 
     public DiscParser(JmsMessage jmsMessage) {
         this.jmsMessage = jmsMessage;
     }
 
-    public Optional<DiscUpdate> parse(String asin, String content) {
+    public Optional<DiscInfo> parse(String asin, String content) {
         this.asin = asin;
-        this.discUpdate = new DiscUpdate();
+        this.discUpdate = new DiscInfo();
         return parse(Jsoup.parseBodyFragment(content));
     }
 
-    private Optional<DiscUpdate> parse(Document document) {
+    private Optional<DiscInfo> parse(Document document) {
 
         /*
          * 解析商品编号，应该与传入的相同

@@ -1,4 +1,4 @@
-package com.mingzuozhibi.discinfos;
+package com.mingzuozhibi.discinfo;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

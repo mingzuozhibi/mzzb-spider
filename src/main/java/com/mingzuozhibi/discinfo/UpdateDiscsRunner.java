@@ -1,4 +1,4 @@
-package com.mingzuozhibi.discinfos;
+package com.mingzuozhibi.discinfo;
 
 import com.mingzuozhibi.commons.mylog.JmsMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -84,7 +84,7 @@ public class UpdateDiscsRunner {
             updateDiscsWriter.resetAsinRankHash();
         }
 
-        Map<String, DiscUpdate> resultMap = discSpider.updateDiscs(asins);
+        Map<String, DiscInfo> resultMap = discSpider.updateDiscs(asins);
 
         if (fullUpdate) {
             updateDiscsWriter.cleanDoneUpdateDiscs();
@@ -93,7 +93,7 @@ public class UpdateDiscsRunner {
             updateDiscsWriter.cleanPrevUpdateDiscs();
         }
 
-        List<DiscUpdate> updatedDiscUpdates = new ArrayList<>(resultMap.values());
+        List<DiscInfo> updatedDiscUpdates = new ArrayList<>(resultMap.values());
         updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscUpdates);
         updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscUpdates);
         updateDiscsWriter.recordHistoryOfDate(updatedDiscUpdates);

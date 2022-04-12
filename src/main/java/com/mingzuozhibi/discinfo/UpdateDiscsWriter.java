@@ -1,4 +1,4 @@
-package com.mingzuozhibi.discinfos;
+package com.mingzuozhibi.discinfo;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -34,7 +34,7 @@ public class UpdateDiscsWriter {
             hashOps.delete("asin.rank.hash", asin);
         });
         Objects.requireNonNull(discs).forEach(json -> {
-            DiscUpdate discUpdate = gson.fromJson(json, DiscUpdate.class);
+            DiscInfo discUpdate = gson.fromJson(json, DiscInfo.class);
             hashOps.put("asin.rank.hash", discUpdate.getAsin(), discUpdate.getRank());
         });
     }
@@ -47,19 +47,19 @@ public class UpdateDiscsWriter {
         listOps.trim("done.update.discs", 1, 0);
     }
 
-    public void pushDoneUpdateDiscs(List<DiscUpdate> discUpdates) {
+    public void pushDoneUpdateDiscs(List<DiscInfo> discUpdates) {
         discUpdates.forEach(discInfo -> {
             listOps.rightPush("done.update.discs", gson.toJson(discInfo));
         });
     }
 
-    public void pushPrevUpdateDiscs(List<DiscUpdate> discUpdates) {
+    public void pushPrevUpdateDiscs(List<DiscInfo> discUpdates) {
         discUpdates.forEach(discInfo -> {
             listOps.rightPush("prev.update.discs", gson.toJson(discInfo));
         });
     }
 
-    public void recordHistoryOfDate(List<DiscUpdate> discUpdates) {
+    public void recordHistoryOfDate(List<DiscInfo> discUpdates) {
         JsonObject history = new JsonObject();
         history.addProperty("date", LocalDateTime.now().toString());
         history.add("updatedDiscs", gson.toJsonTree(discUpdates));
