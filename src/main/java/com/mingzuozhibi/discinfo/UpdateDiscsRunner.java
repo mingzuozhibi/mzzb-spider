@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.mingzuozhibi.utils.ThreadUtils.runWithDaemon;
 
@@ -22,20 +23,23 @@ public class UpdateDiscsRunner {
 
     @Autowired
     private JmsMessage jmsMessage;
+
     @Autowired
     private DiscSpider discSpider;
+
     @Autowired
     private UpdateDiscsWriter updateDiscsWriter;
+
     @Autowired
     private UpdateDiscsSender updateDiscsSender;
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOps;
 
-    private AtomicBoolean running = new AtomicBoolean(false);
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     @GetMapping("/startFullUpdate")
-    @Scheduled(cron = "0 2 1/4 * * ?")
+    @Scheduled(cron = "0 2 1,13 * * ?")
     public void startFullUpdate() {
         jmsMessage.notify("计划任务：开始全量更新");
         List<String> asins = listOps.range("need.update.asins", 0, -1);
@@ -57,7 +61,7 @@ public class UpdateDiscsRunner {
     }
 
     @GetMapping("/startNextUpdate")
-    @Scheduled(cron = "0 12 3/4 * * ?")
+    @Scheduled(cron = "0 2 3,5,9,15,17,21 * * ?")
     public void startNextUpdate() {
         jmsMessage.notify("计划任务：开始补充更新");
         List<String> asins = listOps.range("next.update.asins", 0, -1);
@@ -84,7 +88,10 @@ public class UpdateDiscsRunner {
             updateDiscsWriter.resetAsinRankHash();
         }
 
-        Map<String, DiscInfo> resultMap = discSpider.updateDiscs(asins);
+        List<String> limitAsins = asins.stream()
+            .limit(180)
+            .collect(Collectors.toList());
+        Map<String, DiscInfo> resultMap = discSpider.updateDiscs(limitAsins);
 
         if (fullUpdate) {
             updateDiscsWriter.cleanDoneUpdateDiscs();
