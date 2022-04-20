@@ -39,7 +39,7 @@ public class UpdateDiscsRunner {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @GetMapping("/startFullUpdate")
-    @Scheduled(cron = "0 2 1,13 * * ?")
+    @Scheduled(cron = "0 2 1/4 * * ?")
     public void startFullUpdate() {
         jmsMessage.notify("计划任务：开始全量更新");
         List<String> asins = listOps.range("need.update.asins", 0, -1);
@@ -61,7 +61,7 @@ public class UpdateDiscsRunner {
     }
 
     @GetMapping("/startNextUpdate")
-    @Scheduled(cron = "0 2 3,5,9,15,17,21 * * ?")
+    @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
         jmsMessage.notify("计划任务：开始补充更新");
         List<String> asins = listOps.range("next.update.asins", 0, -1);
