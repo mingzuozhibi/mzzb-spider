@@ -109,7 +109,7 @@ cmd_help() {
   echo "   qt -f             停止应用（强制停止）"
   echo "   vt                运行状态"
   echo ""
-  echo "   fe -d             更新主线分支"
+  echo "   fe -m             更新主线分支"
   echo "   fe -d             更新开发分支"
   echo ""
   echo "   std               tail -f ${StdFile}"
