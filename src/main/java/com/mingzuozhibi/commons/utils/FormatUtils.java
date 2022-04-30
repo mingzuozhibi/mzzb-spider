@@ -1,4 +1,4 @@
-package com.mingzuozhibi.utils;
+package com.mingzuozhibi.commons.utils;
 
 import java.time.format.DateTimeFormatter;
 
@@ -9,8 +9,5 @@ public abstract class FormatUtils {
 
     public static final DateTimeFormatter fmtDate =
         DateTimeFormatter.ofPattern("yyyy/M/d");
-
-    public static final DateTimeFormatter fmtTime =
-        DateTimeFormatter.ofPattern("HH:mm:ss");
 
 }

@@ -1,30 +1,29 @@
-package com.mingzuozhibi.discinfo;
+package com.mingzuozhibi.content;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import com.mingzuozhibi.commons.base.BaseController;
-import com.mingzuozhibi.commons.mylog.JmsMessage;
-import com.mingzuozhibi.commons.mylog.JmsService;
-import com.mingzuozhibi.spider.SpiderRecorder;
+import com.mingzuozhibi.commons.domain.SearchTask;
+import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
+import com.mingzuozhibi.commons.mylog.JmsLogger;
+import com.mingzuozhibi.spider.JmsRecorder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 @RestController
 public class DiscListener extends BaseController {
 
-    @Autowired
-    private Gson gson;
+    private JmsLogger bind;
 
-    @Autowired
-    private JmsMessage jmsMessage;
-
-    @Autowired
-    private JmsService jmsService;
+    @PostConstruct
+    public void bind() {
+        bind = jmsSender.bind(Name.SPIDER_CONTENT);
+    }
 
     @Autowired
     private DiscSpider discSpider;
@@ -34,10 +33,10 @@ public class DiscListener extends BaseController {
 
     @JmsListener(destination = "send.disc.update")
     public void listenDiscUpdate(String json) {
-        TypeToken<?> typeToken = TypeToken.getParameterized(SearchTask.class, DiscInfo.class);
-        SearchTask<DiscInfo> task = gson.fromJson(json, typeToken.getType());
-        SpiderRecorder recorder = new SpiderRecorder("碟片信息", 1, jmsMessage);
-        jmsService.convertAndSend("back.disc.update", gson.toJson(
+        TypeToken<?> typeToken = TypeToken.getParameterized(SearchTask.class, DiscContent.class);
+        SearchTask<DiscContent> task = gson.fromJson(json, typeToken.getType());
+        JmsRecorder recorder = new JmsRecorder(bind, "碟片信息", 1);
+        jmsSender.send("back.disc.update", gson.toJson(
             discSpider.doUpdateDisc(null, recorder, task)
         ));
     }
@@ -49,7 +48,7 @@ public class DiscListener extends BaseController {
         asins.forEach(jsonElement -> {
             listOpts.rightPush("need.update.asins", jsonElement.getAsString());
         });
-        jmsMessage.notify("JMS <- need.update.asins size=" + asins.size());
+        bind.debug("JMS <- need.update.asins size=%d", asins.size());
     }
 
 }

@@ -1,27 +1,22 @@
-package com.mingzuozhibi.discinfo;
+package com.mingzuozhibi.content;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.mingzuozhibi.commons.gson.GsonFactory;
+import com.mingzuozhibi.commons.base.BaseSupport;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Component
-public class UpdateDiscsWriter {
+public class UpdateDiscsWriter extends BaseSupport {
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOps;
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;
-
-    private Gson gson = GsonFactory.createGson();
 
     public void resetNextUpdateAsins(List<String> asins) {
         listOps.trim("next.update.asins", 1, 0);
@@ -34,7 +29,7 @@ public class UpdateDiscsWriter {
             hashOps.delete("asin.rank.hash", asin);
         });
         Objects.requireNonNull(discs).forEach(json -> {
-            DiscInfo discUpdate = gson.fromJson(json, DiscInfo.class);
+            DiscContent discUpdate = gson.fromJson(json, DiscContent.class);
             hashOps.put("asin.rank.hash", discUpdate.getAsin(), discUpdate.getRank());
         });
     }
@@ -47,19 +42,19 @@ public class UpdateDiscsWriter {
         listOps.trim("done.update.discs", 1, 0);
     }
 
-    public void pushDoneUpdateDiscs(List<DiscInfo> discUpdates) {
+    public void pushDoneUpdateDiscs(List<DiscContent> discUpdates) {
         discUpdates.forEach(discInfo -> {
             listOps.rightPush("done.update.discs", gson.toJson(discInfo));
         });
     }
 
-    public void pushPrevUpdateDiscs(List<DiscInfo> discUpdates) {
+    public void pushPrevUpdateDiscs(List<DiscContent> discUpdates) {
         discUpdates.forEach(discInfo -> {
             listOps.rightPush("prev.update.discs", gson.toJson(discInfo));
         });
     }
 
-    public void recordHistoryOfDate(List<DiscInfo> discUpdates) {
+    public void recordHistoryOfDate(List<DiscContent> discUpdates) {
         JsonObject history = new JsonObject();
         history.addProperty("date", LocalDateTime.now().toString());
         history.add("updatedDiscs", gson.toJsonTree(discUpdates));

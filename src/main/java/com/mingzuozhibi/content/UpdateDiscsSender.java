@@ -1,47 +1,46 @@
-package com.mingzuozhibi.discinfo;
+package com.mingzuozhibi.content;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mingzuozhibi.commons.gson.GsonFactory;
-import com.mingzuozhibi.commons.mylog.JmsMessage;
-import com.mingzuozhibi.commons.mylog.JmsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.mingzuozhibi.commons.base.BaseSupport;
+import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
+import com.mingzuozhibi.commons.mylog.JmsLogger;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.mingzuozhibi.utils.FormatUtils.fmtDateTime;
+import static com.mingzuozhibi.commons.utils.FormatUtils.fmtDateTime;
 
 @RestController
-public class UpdateDiscsSender {
+public class UpdateDiscsSender extends BaseSupport {
 
-    @Autowired
-    private JmsService jmsService;
-    @Autowired
-    private JmsMessage jmsMessage;
+    private JmsLogger bind;
+
+    @PostConstruct
+    public void bind() {
+        bind = jmsSender.bind(Name.SPIDER_CONTENT);
+    }
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
-
-    private Gson gson = GsonFactory.createGson();
 
     @GetMapping("/sendPrevUpdateDiscs")
     public void sendPrevUpdateDiscs() {
         List<String> discs = listOpts.range("prev.update.discs", 0, -1);
         if (discs == null || discs.size() == 0) {
-            jmsMessage.warning("无法同步上次更新结果：没有数据");
+            bind.warning("无法同步上次更新结果：没有数据");
         } else {
             JsonArray root = new JsonArray();
             discs.forEach(json -> {
                 root.add(gson.fromJson(json, JsonObject.class));
             });
-            jmsService.sendJson("prev.update.discs", root.toString(), "size=" + discs.size());
-            jmsMessage.success("正在同步上次更新结果：共%d个", root.size());
+            jmsSender.send("prev.update.discs", root.toString());
+            bind.success("正在同步上次更新结果：共%d个", root.size());
         }
     }
 
@@ -53,9 +52,8 @@ public class UpdateDiscsSender {
             LocalDateTime date = gson.fromJson(object.get("date"), LocalDateTime.class);
             JsonArray array = object.getAsJsonArray("updatedDiscs");
             if (array.size() == 0) continue;
-            jmsService.sendJson("last.update.discs", json, "size=" + array.size());
-            jmsMessage.success("正在同步[%s]更新结果：共%d个",
-                date.format(fmtDateTime), array.size());
+            jmsSender.send("last.update.discs", json);
+            bind.success("正在同步[%s]更新结果：共%d个", date.format(fmtDateTime), array.size());
             break;
         }
     }

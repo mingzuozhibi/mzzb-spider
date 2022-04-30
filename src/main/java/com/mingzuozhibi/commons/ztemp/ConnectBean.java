@@ -1,50 +1,63 @@
-package com.mingzuozhibi.commons;
+package com.mingzuozhibi.commons.ztemp;
 
-import com.mingzuozhibi.commons.mylog.JmsConnect;
-import com.mingzuozhibi.commons.mylog.JmsMessage;
+import com.google.gson.JsonObject;
+import com.mingzuozhibi.commons.base.BaseSupport;
+import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
+import com.mingzuozhibi.commons.mylog.JmsLogger;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.net.InetAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
+import javax.annotation.PostConstruct;
+import java.net.*;
 import java.util.Enumeration;
 import java.util.Optional;
 
 @Slf4j
 @Component
-public class ConnectBean implements CommandLineRunner {
+public class ConnectBean extends BaseSupport implements CommandLineRunner {
 
     @Value("${server.port}")
     private int port;
 
-    @Autowired
-    private JmsConnect jmsConnect;
+    @Value("${spring.application.name}")
+    private String name;
 
-    @Autowired
-    private JmsMessage jmsMessage;
+    private String addr;
 
-    private String moduleAddr;
+    private JmsLogger bind;
+
+    @PostConstruct
+    public void bind() {
+        bind = jmsSender.bind(Name.SPIDER_CONTENT);
+    }
 
     public void run(String... args) {
         Optional<String> hostAddress = getHostAddress();
         if (hostAddress.isPresent()) {
-            moduleAddr = hostAddress.get() + ":" + port;
-            jmsMessage.success("应用已启动 => " + moduleAddr);
-            sendConnect();
+            addr = hostAddress.get() + ":" + port;
+            bind.success("应用已启动 => " + addr);
+            jmsSendConnect();
         } else {
-            jmsMessage.warning("Can't get network address");
+            bind.error("Can't get network address");
         }
     }
 
+    public void jmsSendConnect() {
+        JsonObject root = new JsonObject();
+        root.addProperty("name", name);
+        root.addProperty("addr", addr);
+        String json = root.toString();
+        jmsSender.send("module.connect", json);
+    }
+
     @Scheduled(cron = "0 0/10 * * * ?")
-    public void sendConnect() {
-        if (moduleAddr != null) {
-            jmsConnect.connect(moduleAddr);
+    public void autoRunTask() {
+        if (addr != null) {
+            jmsSendConnect();
+            bind.debug("JMS -> module.connect: name=%s, addr=%s", name, addr);
         }
     }
 

@@ -1,6 +1,6 @@
-package com.mingzuozhibi.discinfo;
+package com.mingzuozhibi.content;
 
-import com.mingzuozhibi.commons.mylog.JmsMessage;
+import com.mingzuozhibi.commons.mylog.JmsLogger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,31 +13,30 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.mingzuozhibi.spider.Result.formatErrorCause;
-import static com.mingzuozhibi.utils.FormatUtils.fmtDate;
+import static com.mingzuozhibi.commons.utils.FormatUtils.fmtDate;
 
 public class DiscParser {
 
-    private static final Pattern patternOfRank = Pattern.compile("- ([0-9,]+)位");
+    private static final Pattern patternOfRank = Pattern.compile("- ([\\d,]+)位");
     private static final Pattern patternOfDate = Pattern.compile("(?<year>\\d{4})/(?<month>\\d{1,2})/(?<dom>\\d{1,2})");
     private static final Pattern patternOfDate2 = Pattern.compile("(?<year>\\d{4})年(?<month>\\d{1,2})月(?<dom>\\d{1,2})日");
 
-    private final JmsMessage jmsMessage;
+    private final JmsLogger bind;
 
     private String asin;
-    private DiscInfo discUpdate;
+    private DiscContent discUpdate;
 
-    public DiscParser(JmsMessage jmsMessage) {
-        this.jmsMessage = jmsMessage;
+    public DiscParser(JmsLogger bind) {
+        this.bind = bind;
     }
 
-    public Optional<DiscInfo> parse(String asin, String content) {
+    public Optional<DiscContent> parse(String asin, String content) {
         this.asin = asin;
-        this.discUpdate = new DiscInfo();
+        this.discUpdate = new DiscContent();
         return parse(Jsoup.parseBodyFragment(content));
     }
 
-    private Optional<DiscInfo> parse(Document document) {
+    private Optional<DiscContent> parse(Document document) {
 
         /*
          * 解析商品编号，应该与传入的相同
@@ -47,11 +46,11 @@ public class DiscParser {
         parseAsinAndDateAndRank(document);
 
         if (StringUtils.isEmpty(discUpdate.getAsin())) {
-            jmsMessage.warning("解析信息：[%s][未发现商品编号]", asin);
+            bind.warning("解析信息：[%s][未发现商品编号]", asin);
             return Optional.empty();
         }
         if (!Objects.equals(discUpdate.getAsin(), asin)) {
-            jmsMessage.warning("解析信息：[%s][商品编号不符合]", asin);
+            bind.warning("解析信息：[%s][商品编号不符合]", asin);
             return Optional.empty();
         }
 
@@ -63,7 +62,7 @@ public class DiscParser {
         parseTitle(document);
 
         if (StringUtils.isEmpty(discUpdate.getTitle())) {
-            jmsMessage.warning("解析信息：[%s][未发现碟片标题]", asin);
+            bind.warning("解析信息：[%s][未发现碟片标题]", asin);
             return Optional.empty();
         }
 
@@ -90,9 +89,9 @@ public class DiscParser {
         }
         if (Objects.isNull(discUpdate.getDate())) {
             if (discUpdate.isBuyset()) {
-                jmsMessage.info("解析信息：[%s][未发现套装发售日期]", asin);
+                bind.info("解析信息：[%s][未发现套装发售日期]", asin);
             } else {
-                jmsMessage.warning("解析信息：[%s][未发现发售日期]", asin);
+                bind.warning("解析信息：[%s][未发现发售日期]", asin);
             }
         }
 
@@ -228,34 +227,34 @@ public class DiscParser {
             boolean likeBD = title.contains("BD");
             if (isBD && !isDVD) {
                 discUpdate.setType("Bluray");
-                jmsMessage.info("解析信息：[%s][推测类型为BD]", asin);
+                bind.info("解析信息：[%s][推测类型为BD]", asin);
                 return;
             }
             if (isDVD && !isBD) {
                 discUpdate.setType("Dvd");
-                jmsMessage.info("解析信息：[%s][推测类型为DVD]", asin);
+                bind.info("解析信息：[%s][推测类型为DVD]", asin);
                 return;
             }
             if (hasBD && !hasDVD) {
-                jmsMessage.info("解析信息：[%s][推测类型为BD]", asin);
+                bind.info("解析信息：[%s][推测类型为BD]", asin);
                 discUpdate.setType("Bluray");
                 return;
             }
             if (hasDVD && !hasBD) {
-                jmsMessage.info("解析信息：[%s][推测类型为DVD]", asin);
+                bind.info("解析信息：[%s][推测类型为DVD]", asin);
                 discUpdate.setType("Dvd");
                 return;
             }
             if (likeBD) {
-                jmsMessage.notify("解析信息：[%s][疑似类型为BD]", asin);
+                bind.notify("解析信息：[%s][疑似类型为BD]", asin);
                 discUpdate.setType("Bluray");
                 return;
             }
-            jmsMessage.warning("解析信息：[%s][推测类型为DVD或BD]", asin);
+            bind.warning("解析信息：[%s][推测类型为DVD或BD]", asin);
             discUpdate.setType("Auto");
             return;
         }
-        jmsMessage.warning("解析信息：[%s][推测类型为其他]", asin);
+        bind.warning("解析信息：[%s][推测类型为其他]", asin);
         discUpdate.setType("Other");
     }
 
@@ -269,7 +268,7 @@ public class DiscParser {
             Matcher matcher = patternOfDate2.matcher(getText(elements));
             if (matcher.find()) {
                 setDate(matcher);
-                jmsMessage.info("解析信息：[%s][发现套装发售日期]", asin);
+                bind.info("解析信息：[%s][发现套装发售日期]", asin);
             }
         }
     }
@@ -280,7 +279,7 @@ public class DiscParser {
             Matcher matcher = patternOfDate2.matcher(getText(elements));
             if (matcher.find()) {
                 setDate(matcher);
-                jmsMessage.info("解析信息：[%s][发现疑似发售日期]", asin);
+                bind.info("解析信息：[%s][发现疑似发售日期]", asin);
             }
         }
     }
@@ -292,7 +291,7 @@ public class DiscParser {
     private void setBuyset() {
         if (!discUpdate.isBuyset()) {
             discUpdate.setBuyset(true);
-            jmsMessage.info("解析信息：[%s][检测到套装商品]", asin);
+            bind.info("解析信息：[%s][检测到套装商品]", asin);
         }
     }
 
@@ -313,7 +312,7 @@ public class DiscParser {
                 .forEach(builder::appendCodePoint);
             return Integer.parseInt(builder.toString());
         } catch (RuntimeException e) {
-            jmsMessage.danger("解析信息：[%s][parseNumber error：%s]", asin, formatErrorCause(e));
+            bind.error("解析信息：[%s][parseNumber error：%s]", asin, e);
             return null;
         }
     }

@@ -1,12 +1,12 @@
 package com.mingzuozhibi.spider;
 
+import com.mingzuozhibi.commons.domain.Result;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
 public abstract class SpiderJsoup {
 
     public static Result<String> waitResultJsoup(String url) {
-        Result<String> result = new Result<>();
         try {
             Connection.Response execute = Jsoup.connect(url)
                 .userAgent(SpiderUtils.USER_AGENT)
@@ -14,11 +14,10 @@ public abstract class SpiderJsoup {
                 .ignoreContentType(true)
                 .maxBodySize(10 * 1024 * 1024)
                 .execute();
-            result.setContent(execute.body());
+            return Result.ofData(execute.body());
         } catch (Exception e) {
-            result.pushError(e);
+            return Result.ofError(e.toString());
         }
-        return result;
     }
 
 }

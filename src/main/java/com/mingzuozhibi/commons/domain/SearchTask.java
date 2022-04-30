@@ -1,8 +1,6 @@
-package com.mingzuozhibi.discinfo;
+package com.mingzuozhibi.commons.domain;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
@@ -18,12 +16,17 @@ public class SearchTask<T> {
     }
 
     private String uuid;
+
     private String key;
+
     private boolean success;
+
     private String message;
+
     private T data;
 
     public SearchTask<T> withError(String message) {
+        setSuccess(false);
         setMessage(message);
         return this;
     }
@@ -33,4 +36,5 @@ public class SearchTask<T> {
         setData(data);
         return this;
     }
+
 }
