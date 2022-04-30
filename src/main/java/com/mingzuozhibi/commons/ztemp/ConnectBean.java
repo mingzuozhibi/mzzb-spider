@@ -57,7 +57,7 @@ public class ConnectBean extends BaseSupport implements CommandLineRunner {
     public void autoRunTask() {
         if (addr != null) {
             jmsSendConnect();
-            bind.debug("JMS -> module.connect: name=%s, addr=%s", name, addr);
+            log.debug("JMS -> module.connect name={}, addr={}", name, addr);
         }
     }
 
