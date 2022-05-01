@@ -19,7 +19,6 @@ public class JmsRecorder {
     private int errorCount;
     private int breakCount;
     private int doneCount;
-    private int dataCount;
 
     public JmsRecorder(JmsLogger bind, String taskName, int taskSize) {
         this.taskName = taskName;
@@ -52,11 +51,6 @@ public class JmsRecorder {
         this.breakCount = 0;
         this.doneCount++;
         bind.info("更新成功：[%s][%s]", origin, message);
-    }
-
-    public void jmsFoundData(String message) {
-        this.dataCount++;
-        bind.success(message);
     }
 
     public boolean checkUnfinished(String origin, Result<?> result) {
