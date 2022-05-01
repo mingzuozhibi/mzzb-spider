@@ -1,6 +1,7 @@
-package com.mingzuozhibi.content;
+package com.mingzuozhibi.content.auto;
 
 import com.mingzuozhibi.commons.base.BaseSupport;
+import com.mingzuozhibi.content.Content;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,7 @@ import java.util.Set;
 import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
 
 @Component
-public class UpdateDiscsWriter extends BaseSupport {
+public class ContentWriter extends BaseSupport {
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOps;
@@ -29,7 +30,7 @@ public class UpdateDiscsWriter extends BaseSupport {
         List<String> jsons = listOps.range(PREV_UPDATE_DISCS, 0, -1);
         if (jsons == null) return;
         jsons.forEach(json -> {
-            DiscContent discUpdate = gson.fromJson(json, DiscContent.class);
+            Content discUpdate = gson.fromJson(json, Content.class);
             hashOps.put(RECORDS_ASIN_RANK, discUpdate.getAsin(), discUpdate.getRank());
         });
     }
@@ -42,26 +43,26 @@ public class UpdateDiscsWriter extends BaseSupport {
         listOps.trim(DONE_UPDATE_DISCS, 1, 0);
     }
 
-    public void pushDoneUpdateDiscs(List<DiscContent> updatedDiscs) {
-        updatedDiscs.forEach(content -> {
+    public void pushDoneUpdateDiscs(List<Content> contents) {
+        contents.forEach(content -> {
             listOps.rightPush(DONE_UPDATE_DISCS, gson.toJson(content));
         });
     }
 
-    public void pushPrevUpdateDiscs(List<DiscContent> updatedDiscs) {
-        updatedDiscs.forEach(content -> {
+    public void pushPrevUpdateDiscs(List<Content> contents) {
+        contents.forEach(content -> {
             listOps.rightPush(PREV_UPDATE_DISCS, gson.toJson(content));
         });
     }
 
-    public void pushLastUpdateDiscs(List<DiscContent> updatedDiscs) {
-        DateResult dateResult = new DateResult(updatedDiscs);
+    public void pushLastUpdateDiscs(List<Content> contents) {
+        DateResult dateResult = new DateResult(contents);
         listOps.leftPush(LAST_UPDATE_DISCS, gson.toJson(dateResult));
         listOps.trim(LAST_UPDATE_DISCS, 0, 99);
     }
 
-    public void cleanNextUpdateAsins(Set<String> updatedAsins) {
-        updatedAsins.forEach(asin -> {
+    public void cleanNextUpdateAsins(Set<String> asins) {
+        asins.forEach(asin -> {
             listOps.remove(NEXT_UPDATE_ASINS, 0, asin);
         });
     }

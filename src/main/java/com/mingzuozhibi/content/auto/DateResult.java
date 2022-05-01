@@ -1,5 +1,6 @@
-package com.mingzuozhibi.content;
+package com.mingzuozhibi.content.auto;
 
+import com.mingzuozhibi.content.Content;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -9,15 +10,17 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class DateResult {
-    public DateResult(List<DiscContent> result) {
+
+    private LocalDateTime date;
+    private List<Content> result;
+
+    public DateResult(List<Content> result) {
         this.date = LocalDateTime.now();
         this.result = result;
     }
 
-    private LocalDateTime date;
-    private List<DiscContent> result;
-
     public int count() {
         return result == null ? 0 : result.size();
     }
+
 }

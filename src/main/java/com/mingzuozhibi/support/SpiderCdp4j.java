@@ -1,4 +1,4 @@
-package com.mingzuozhibi.spider;
+package com.mingzuozhibi.support;
 
 import com.mingzuozhibi.commons.domain.Result;
 import io.webfolder.cdp.Launcher;

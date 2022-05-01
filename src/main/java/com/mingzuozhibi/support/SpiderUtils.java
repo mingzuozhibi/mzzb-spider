@@ -1,4 +1,4 @@
-package com.mingzuozhibi.spider;
+package com.mingzuozhibi.support;
 
 import com.mingzuozhibi.commons.domain.Result;
 import io.webfolder.cdp.session.SessionFactory;
@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Random;
 
-import static com.mingzuozhibi.spider.SpiderCdp4j.waitResultCdp4j;
+import static com.mingzuozhibi.support.SpiderCdp4j.waitResultCdp4j;
 
 @Slf4j
 public abstract class SpiderUtils {

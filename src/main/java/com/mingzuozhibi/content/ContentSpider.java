@@ -5,7 +5,7 @@ import com.mingzuozhibi.commons.domain.Result;
 import com.mingzuozhibi.commons.domain.SearchTask;
 import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
 import com.mingzuozhibi.commons.mylog.JmsLogger;
-import com.mingzuozhibi.spider.JmsRecorder;
+import com.mingzuozhibi.support.JmsRecorder;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
@@ -15,16 +15,13 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 
-import static com.mingzuozhibi.spider.JmsRecorder.writeContent;
-import static com.mingzuozhibi.spider.SpiderCdp4j.doInSessionFactory;
-import static com.mingzuozhibi.spider.SpiderUtils.waitResult;
+import static com.mingzuozhibi.support.JmsRecorder.writeContent;
+import static com.mingzuozhibi.support.SpiderCdp4j.doInSessionFactory;
+import static com.mingzuozhibi.support.SpiderUtils.waitResult;
 
 @Slf4j
 @Component
-public class DiscSpider extends BaseSupport {
-
-    @Resource(name = "redisTemplate")
-    private HashOperations<String, String, Integer> hashOps;
+public class ContentSpider extends BaseSupport {
 
     private JmsLogger bind;
 
@@ -33,15 +30,18 @@ public class DiscSpider extends BaseSupport {
         bind = jmsSender.bind(Name.SPIDER_CONTENT);
     }
 
-    public Map<String, DiscContent> updateDiscs(List<String> asins) {
+    @Resource(name = "redisTemplate")
+    private HashOperations<String, String, Integer> hashOps;
+
+    public Map<String, Content> updateDiscs(List<String> asins) {
         JmsRecorder recorder = new JmsRecorder(bind, "日亚排名", asins.size());
         recorder.jmsStartUpdate();
 
-        Map<String, DiscContent> discUpdates = new LinkedHashMap<>();
+        Map<String, Content> discUpdates = new LinkedHashMap<>();
         doInSessionFactory(factory -> {
             for (String asin : asins) {
                 if (recorder.checkBreakCount(5)) break;
-                SearchTask<DiscContent> task = doUpdateDisc(factory, recorder, new SearchTask<>(asin));
+                SearchTask<Content> task = doUpdateDisc(factory, recorder, new SearchTask<>(asin));
                 if (task.isSuccess()) {
                     discUpdates.put(asin, task.getData());
                 }
@@ -53,8 +53,8 @@ public class DiscSpider extends BaseSupport {
         return discUpdates;
     }
 
-    public SearchTask<DiscContent> doUpdateDisc(
-        SessionFactory factory, JmsRecorder recorder, SearchTask<DiscContent> task
+    public SearchTask<Content> doUpdateDisc(
+        SessionFactory factory, JmsRecorder recorder, SearchTask<Content> task
     ) {
         // 开始查询
         String asin = task.getKey();
@@ -68,7 +68,7 @@ public class DiscSpider extends BaseSupport {
         // 发现反爬
         if (content.contains("api-services-support@amazon.com")) {
             if (content.contains("何かお探しですか？")) {
-                DiscContent discUpdate = new DiscContent();
+                Content discUpdate = new Content();
                 discUpdate.setAsin(asin);
                 discUpdate.setOffTheShelf(true);
                 return task.withData(discUpdate);
@@ -81,7 +81,7 @@ public class DiscSpider extends BaseSupport {
 
         try {
             // 开始解析
-            Optional<DiscContent> discRef = new DiscParser(bind).parse(asin, content);
+            Optional<Content> discRef = new ContentParser(bind).parse(asin, content);
 
             // 数据异常
             if (!discRef.isPresent()) {
@@ -91,7 +91,7 @@ public class DiscSpider extends BaseSupport {
             }
 
             // 解析成功
-            DiscContent discUpdate = discRef.get();
+            Content discUpdate = discRef.get();
             Integer prevRank = hashOps.get("asin.rank.hash", asin);
             Integer thisRank = discUpdate.getRank();
             recorder.jmsSuccessRow(asin, prevRank + " => " + thisRank);

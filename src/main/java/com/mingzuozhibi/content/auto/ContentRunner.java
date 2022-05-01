@@ -1,7 +1,9 @@
-package com.mingzuozhibi.content;
+package com.mingzuozhibi.content.auto;
 
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.commons.mylog.JmsLogger;
+import com.mingzuozhibi.content.Content;
+import com.mingzuozhibi.content.ContentSpider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
@@ -19,7 +21,7 @@ import static com.mingzuozhibi.commons.utils.ThreadUtils.runWithDaemon;
 
 @Slf4j
 @RestController
-public class UpdateDiscsRunner extends BaseSupport {
+public class ContentRunner extends BaseSupport {
 
     private JmsLogger bind;
 
@@ -29,13 +31,13 @@ public class UpdateDiscsRunner extends BaseSupport {
     }
 
     @Autowired
-    private DiscSpider discSpider;
+    private ContentSpider contentSpider;
 
     @Autowired
-    private UpdateDiscsWriter updateDiscsWriter;
+    private ContentWriter contentWriter;
 
     @Autowired
-    private UpdateDiscsSender updateDiscsSender;
+    private ContentSender contentSender;
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOps;
@@ -77,25 +79,25 @@ public class UpdateDiscsRunner extends BaseSupport {
         }
         try {
             if (fullUpdate) {
-                updateDiscsWriter.resetNextUpdateAsins(asins);
-                updateDiscsWriter.resetAsinRankHash();
+                contentWriter.resetNextUpdateAsins(asins);
+                contentWriter.resetAsinRankHash();
             }
 
-            Map<String, DiscContent> resultMap = discSpider.updateDiscs(asins);
+            Map<String, Content> map = contentSpider.updateDiscs(asins);
 
             if (fullUpdate) {
-                updateDiscsWriter.cleanDoneUpdateDiscs();
-                updateDiscsWriter.cleanPrevUpdateDiscs();
+                contentWriter.cleanDoneUpdateDiscs();
+                contentWriter.cleanPrevUpdateDiscs();
             } else {
-                updateDiscsWriter.cleanPrevUpdateDiscs();
+                contentWriter.cleanPrevUpdateDiscs();
             }
 
-            List<DiscContent> updatedDiscs = new ArrayList<>(resultMap.values());
-            updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscs);
-            updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscs);
-            updateDiscsWriter.pushLastUpdateDiscs(updatedDiscs);
-            updateDiscsWriter.cleanNextUpdateAsins(resultMap.keySet());
-            updateDiscsSender.sendPrevUpdateDiscs();
+            List<Content> contents = new ArrayList<>(map.values());
+            contentWriter.pushDoneUpdateDiscs(contents);
+            contentWriter.pushPrevUpdateDiscs(contents);
+            contentWriter.pushLastUpdateDiscs(contents);
+            contentWriter.cleanNextUpdateAsins(map.keySet());
+            contentSender.sendPrevUpdateDiscs();
         } finally {
             running.set(false);
         }

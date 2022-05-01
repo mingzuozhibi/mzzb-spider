@@ -1,4 +1,4 @@
-package com.mingzuozhibi.content;
+package com.mingzuozhibi.content.auto;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -16,7 +16,7 @@ import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
 import static com.mingzuozhibi.commons.utils.FormatUtils.fmtDateTime;
 
 @RestController
-public class UpdateDiscsSender extends BaseSupport {
+public class ContentSender extends BaseSupport {
 
     private JmsLogger bind;
 
