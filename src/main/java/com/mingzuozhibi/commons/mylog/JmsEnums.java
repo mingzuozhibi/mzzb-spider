@@ -15,6 +15,8 @@ public class JmsEnums {
     public static final String PREV_UPDATE_DISCS = "prev.update.discs";
     public static final String LAST_UPDATE_DISCS = "last.update.discs";
 
+    public static final String RECORDS_ASIN_RANK = "records.asin.rank";
+
     public enum Type {
         DEBUG,
         INFO,

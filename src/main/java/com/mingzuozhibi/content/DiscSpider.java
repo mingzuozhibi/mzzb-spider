@@ -53,9 +53,9 @@ public class DiscSpider extends BaseSupport {
         return discUpdates;
     }
 
-    public SearchTask<DiscContent> doUpdateDisc(SessionFactory factory,
-                                                JmsRecorder recorder,
-                                                SearchTask<DiscContent> task) {
+    public SearchTask<DiscContent> doUpdateDisc(
+        SessionFactory factory, JmsRecorder recorder, SearchTask<DiscContent> task
+    ) {
         // 开始查询
         String asin = task.getKey();
         recorder.jmsStartUpdateRow(asin);

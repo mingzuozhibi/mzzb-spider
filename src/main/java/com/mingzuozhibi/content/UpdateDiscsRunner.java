@@ -1,7 +1,6 @@
 package com.mingzuozhibi.content;
 
 import com.mingzuozhibi.commons.base.BaseSupport;
-import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
 import com.mingzuozhibi.commons.mylog.JmsLogger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +13,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
+import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
 import static com.mingzuozhibi.commons.utils.ThreadUtils.runWithDaemon;
 
 @Slf4j
@@ -47,21 +46,13 @@ public class UpdateDiscsRunner extends BaseSupport {
     @Scheduled(cron = "0 2 1/4 * * ?")
     public void startFullUpdate() {
         bind.notify("计划任务：开始全量更新");
-        List<String> asins = listOps.range("need.update.asins", 0, -1);
+        List<String> asins = listOps.range(NEED_UPDATE_ASINS, 0, -1);
         if (asins == null || asins.isEmpty()) {
             bind.warning("任务终止：无可更新数据");
             return;
         }
         runWithDaemon("全量更新", bind, () -> {
-            if (!running.compareAndSet(false, true)) {
-                bind.warning("任务终止：已有其他更新");
-                return;
-            }
-            try {
-                runFetchDiscs(asins, true);
-            } finally {
-                running.set(false);
-            }
+            runFetchDiscs(asins, true);
         });
     }
 
@@ -69,48 +60,45 @@ public class UpdateDiscsRunner extends BaseSupport {
     @Scheduled(cron = "0 2 3/4 * * ?")
     public void startNextUpdate() {
         bind.notify("计划任务：开始补充更新");
-        List<String> asins = listOps.range("next.update.asins", 0, -1);
+        List<String> asins = listOps.range(NEXT_UPDATE_ASINS, 0, -1);
         if (asins == null || asins.isEmpty()) {
             bind.notify("任务终止：无可更新数据");
             return;
         }
         runWithDaemon("补充更新", bind, () -> {
-            if (!running.compareAndSet(false, true)) {
-                bind.warning("任务终止：已有其他更新");
-                return;
-            }
-            try {
-                runFetchDiscs(asins, false);
-            } finally {
-                running.set(false);
-            }
+            runFetchDiscs(asins, false);
         });
     }
 
     private void runFetchDiscs(List<String> asins, boolean fullUpdate) {
-        if (fullUpdate) {
-            updateDiscsWriter.resetNextUpdateAsins(asins);
-            updateDiscsWriter.resetAsinRankHash();
+        if (!running.compareAndSet(false, true)) {
+            bind.warning("任务终止：已有其他更新");
+            return;
         }
+        try {
+            if (fullUpdate) {
+                updateDiscsWriter.resetNextUpdateAsins(asins);
+                updateDiscsWriter.resetAsinRankHash();
+            }
 
-        List<String> limitAsins = asins.stream()
-            .limit(180)
-            .collect(Collectors.toList());
-        Map<String, DiscContent> resultMap = discSpider.updateDiscs(limitAsins);
+            Map<String, DiscContent> resultMap = discSpider.updateDiscs(asins);
 
-        if (fullUpdate) {
-            updateDiscsWriter.cleanDoneUpdateDiscs();
-            updateDiscsWriter.cleanPrevUpdateDiscs();
-        } else {
-            updateDiscsWriter.cleanPrevUpdateDiscs();
+            if (fullUpdate) {
+                updateDiscsWriter.cleanDoneUpdateDiscs();
+                updateDiscsWriter.cleanPrevUpdateDiscs();
+            } else {
+                updateDiscsWriter.cleanPrevUpdateDiscs();
+            }
+
+            List<DiscContent> updatedDiscs = new ArrayList<>(resultMap.values());
+            updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscs);
+            updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscs);
+            updateDiscsWriter.pushLastUpdateDiscs(updatedDiscs);
+            updateDiscsWriter.cleanNextUpdateAsins(resultMap.keySet());
+            updateDiscsSender.sendPrevUpdateDiscs();
+        } finally {
+            running.set(false);
         }
-
-        List<DiscContent> updatedDiscUpdates = new ArrayList<>(resultMap.values());
-        updateDiscsWriter.pushDoneUpdateDiscs(updatedDiscUpdates);
-        updateDiscsWriter.pushPrevUpdateDiscs(updatedDiscUpdates);
-        updateDiscsWriter.recordHistoryOfDate(updatedDiscUpdates);
-        updateDiscsWriter.cleanNextUpdateAsins(resultMap.keySet());
-        updateDiscsSender.sendPrevUpdateDiscs();
     }
 
 }

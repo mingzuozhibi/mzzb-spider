@@ -15,6 +15,8 @@ import java.net.*;
 import java.util.Enumeration;
 import java.util.Optional;
 
+import static com.mingzuozhibi.commons.mylog.JmsEnums.MODULE_CONNECT;
+
 @Slf4j
 @Component
 public class ConnectBean extends BaseSupport implements CommandLineRunner {
@@ -50,14 +52,14 @@ public class ConnectBean extends BaseSupport implements CommandLineRunner {
         root.addProperty("name", name);
         root.addProperty("addr", addr);
         String json = root.toString();
-        jmsSender.send("module.connect", json);
+        jmsSender.send(MODULE_CONNECT, json);
     }
 
     @Scheduled(cron = "0 0/10 * * * ?")
-    public void autoRunTask() {
+    public void autoSendConnect() {
         if (addr != null) {
             jmsSendConnect();
-            log.debug("JMS -> module.connect name={}, addr={}", name, addr);
+            log.debug("JMS -> {} name={}, addr={}", MODULE_CONNECT, name, addr);
         }
     }
 
