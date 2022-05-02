@@ -13,43 +13,36 @@
 名作之壁吧致力于成为动画商业化讨论领域的专业型贴吧，以专业、低调、务实、开放为发展目标，欢迎对动画销量、业界、产业相关话题有兴趣的同好发帖交流。
 
 [home]: https://tieba.baidu.com/f?kw=名作之壁&ie=utf-8
+
 [mzzb]: https://mingzuozhibi.com
 
-### 安装说明
+### 开发测试
 
-**下载**
-```bash
-git clone https://github.com/mingzuozhibi/mzzb-disc-spider.git
-```
+**安装依赖**
 
-**依赖**
-```
-jdk8, maven3, activemq5, redis5
-```
+* Install OpenJDK-8
+* Install MySQL-8
+* Install ActiveMQ-5
+* Install RedisServer-6
 
-**初始化**
-```bash
-cd mzzb-disc-spider
-sh manual/initial.sh
+**初始配置**
+
+```shell
+bash bin/init_mysql.sh
+cp etc/app.properties.default etc/app.properties
+# edit etc/app.properties, change passwords
 ```
 
 **测试运行**
-```bash
-mvn clean compile
-mvn spring-boot:run
-```
 
-**后台运行**
-```bash
-sh app.sh st -f
-```
-
-**后台终止**
-```bash
-sh app.sh qt -f
-```
-
-**更多命令**
-```bash
-sh app.sh help
+```text
+usage: bash app.sh [d|dd|dev]
+usage: bash app.sh [st|start] [-f]
+usage: bash app.sh [qt|stop] [-f]
+usage: bash app.sh [rt|restart]
+usage: bash app.sh [vt|status]
+usage: bash app.sh log [-a]
+usage: bash app.sh std [-a]
+usage: bash app.sh fed
+usage: bash app.sh fem
 ```
