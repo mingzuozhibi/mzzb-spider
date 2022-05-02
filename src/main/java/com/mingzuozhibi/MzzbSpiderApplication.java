@@ -19,8 +19,8 @@ public class MzzbSpiderApplication {
         ConfigurableApplicationContext context =
             SpringApplication.run(MzzbSpiderApplication.class, args);
         context.getBean(JmsSender.class).bind(Name.SPIDER_CONTENT)
-            .success("应用已启动: SPIDER_CONTENT");
+            .notify("SPIDER_CONTENT已启动");
         context.getBean(JmsSender.class).bind(Name.SPIDER_HISTORY)
-            .success("应用已启动: SPIDER_HISTORY");
+            .notify("SPIDER_HISTORY已启动");
     }
 }

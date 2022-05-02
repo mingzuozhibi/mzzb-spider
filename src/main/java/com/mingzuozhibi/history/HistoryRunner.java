@@ -29,14 +29,14 @@ public class HistoryRunner extends BaseController {
     @Scheduled(cron = "0 2 7/12 * * ?")
     @GetMapping("/startUpdate")
     public void startUpdate() {
-        runWithDaemon("startUpdate", bind, () -> {
+        runWithDaemon(bind, "startUpdate", () -> {
             historySpider.runFetchTasks(buildTasks(60, 10));
         });
     }
 
     @GetMapping("/checkUpdate")
     public void checkUpdate() {
-        runWithDaemon("testUpdate", bind, () -> {
+        runWithDaemon(bind, "testUpdate", () -> {
             historySpider.runFetchTasks(buildTasks(1, 1));
         });
     }
