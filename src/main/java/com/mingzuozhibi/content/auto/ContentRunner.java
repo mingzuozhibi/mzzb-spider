@@ -50,7 +50,7 @@ public class ContentRunner extends BaseSupport {
     }
 
     @GetMapping("/startNextUpdate")
-    @Scheduled(cron = "0 2 3/4 * * ?")
+    @Scheduled(cron = "0 12 3/4 * * ?")
     public void startNextUpdate() {
         bind.notify("计划任务：开始补充更新");
         List<String> asins = listOps.range(NEXT_UPDATE_ASINS, 0, -1);
