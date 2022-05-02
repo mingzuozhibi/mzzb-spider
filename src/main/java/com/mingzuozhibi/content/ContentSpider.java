@@ -3,15 +3,14 @@ package com.mingzuozhibi.content;
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.commons.domain.Result;
 import com.mingzuozhibi.commons.domain.SearchTask;
+import com.mingzuozhibi.commons.mylog.JmsBind;
 import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
-import com.mingzuozhibi.commons.mylog.JmsLogger;
 import com.mingzuozhibi.support.JmsRecorder;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 
@@ -21,14 +20,8 @@ import static com.mingzuozhibi.support.SpiderUtils.waitResult;
 
 @Slf4j
 @Component
+@JmsBind(Name.SPIDER_CONTENT)
 public class ContentSpider extends BaseSupport {
-
-    private JmsLogger bind;
-
-    @PostConstruct
-    public void bind() {
-        bind = jmsSender.bind(Name.SPIDER_CONTENT);
-    }
 
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;

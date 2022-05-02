@@ -2,6 +2,7 @@ package com.mingzuozhibi.history;
 
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.commons.domain.Result;
+import com.mingzuozhibi.commons.mylog.JmsBind;
 import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
 import com.mingzuozhibi.commons.mylog.JmsLogger;
 import com.mingzuozhibi.support.JmsRecorder;
@@ -18,14 +19,8 @@ import static com.mingzuozhibi.support.SpiderJsoup.waitResultJsoup;
 
 @Slf4j
 @Service
+@JmsBind(Name.SPIDER_HISTORY)
 public class HistorySpider extends BaseSupport {
-
-    private JmsLogger bind;
-
-    @PostConstruct
-    public void bind() {
-        bind = jmsSender.bind(Name.SPIDER_HISTORY);
-    }
 
     @Autowired
     private HistoryParser historyParser;

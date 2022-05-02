@@ -3,12 +3,11 @@ package com.mingzuozhibi.content.auto;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mingzuozhibi.commons.base.BaseSupport;
-import com.mingzuozhibi.commons.mylog.JmsLogger;
+import com.mingzuozhibi.commons.mylog.JmsBind;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
 
@@ -16,14 +15,8 @@ import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
 import static com.mingzuozhibi.commons.utils.FormatUtils.fmtDateTime;
 
 @RestController
+@JmsBind(Name.SPIDER_CONTENT)
 public class ContentSender extends BaseSupport {
-
-    private JmsLogger bind;
-
-    @PostConstruct
-    public void bind() {
-        bind = jmsSender.bind(Name.SPIDER_CONTENT);
-    }
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
