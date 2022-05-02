@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
 
+import static com.mingzuozhibi.commons.mylog.JmsEnums.HISTORY_FINISH;
 import static com.mingzuozhibi.support.SpiderJsoup.waitResultJsoup;
 
 @Slf4j
@@ -46,6 +47,7 @@ public class HistorySpider extends BaseSupport {
 
         recorder.jmsSummary();
         recorder.jmsEndUpdate();
+        jmsSender.send(HISTORY_FINISH, "");
     }
 
     public Result<String> readCookie() {
