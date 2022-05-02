@@ -27,7 +27,7 @@ public class JmsRecorder {
     }
 
     public void jmsStartUpdate() {
-        bind.notify("更新%s开始：共%d个任务", this.taskName, this.taskSize);
+        bind.notify("更新%s：共%d个", this.taskName, this.taskSize);
     }
 
     public void jmsEndUpdate() {
