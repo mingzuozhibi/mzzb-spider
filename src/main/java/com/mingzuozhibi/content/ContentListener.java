@@ -4,28 +4,21 @@ import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import com.mingzuozhibi.commons.base.BaseController;
 import com.mingzuozhibi.commons.domain.SearchTask;
-import com.mingzuozhibi.commons.mylog.JmsLogger;
+import com.mingzuozhibi.commons.mylog.JmsBind;
 import com.mingzuozhibi.support.JmsRecorder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 import static com.google.gson.reflect.TypeToken.getParameterized;
 import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
 
 @RestController
+@JmsBind(Name.SPIDER_CONTENT)
 public class ContentListener extends BaseController {
-
-    private JmsLogger bind;
-
-    @PostConstruct
-    public void bind() {
-        bind = jmsSender.bind(Name.SPIDER_CONTENT);
-    }
 
     @Autowired
     private ContentSpider contentSpider;
