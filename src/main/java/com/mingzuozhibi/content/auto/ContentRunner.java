@@ -36,7 +36,7 @@ public class ContentRunner extends BaseSupport {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @GetMapping("/startFullUpdate")
-    @Scheduled(cron = "0 2 1/4 * * ?")
+    @Scheduled(cron = "0 12 1/4 * * ?")
     public void startFullUpdate() {
         bind.notify("计划任务：开始全量更新");
         List<String> asins = listOps.range(NEED_UPDATE_ASINS, 0, -1);
