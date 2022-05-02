@@ -1,7 +1,6 @@
 package com.mingzuozhibi;
 
 import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
-import com.mingzuozhibi.commons.mylog.JmsLogger;
 import com.mingzuozhibi.commons.mylog.JmsSender;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -19,8 +18,7 @@ public class MzzbSpiderApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext context =
             SpringApplication.run(MzzbSpiderApplication.class, args);
-        JmsLogger bind = context.getBean(JmsSender.class).bind(Name.SERVER_CORE);
-        bind.notify("SPIDER_CONTENT已启动");
-        bind.notify("SPIDER_HISTORY已启动");
+        context.getBean(JmsSender.class).bind(Name.SERVER_CORE)
+            .notify("MzzbSpiderApplication已启动");
     }
 }
