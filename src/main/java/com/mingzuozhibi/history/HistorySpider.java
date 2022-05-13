@@ -47,7 +47,7 @@ public class HistorySpider extends BaseSupport {
 
         recorder.jmsSummary();
         recorder.jmsEndUpdate();
-        jmsSender.send(HISTORY_FINISH, "");
+        jmsSender.send(HISTORY_FINISH, "done");
     }
 
     public Result<String> readCookie() {
