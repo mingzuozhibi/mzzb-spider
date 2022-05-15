@@ -38,7 +38,9 @@ public class HistorySpider extends BaseSupport {
             if (recorder.checkBreakCount(5))
                 break;
             recorder.jmsStartUpdateRow(task.getName());
-            Result<String> bodyResult = waitResultJsoup(task.getUrl(), cookie.getData());
+            Result<String> bodyResult = waitResultJsoup(task.getUrl(), connection -> {
+                connection.header("cookie", cookie.getData());
+            });
             if (recorder.checkUnfinished(task.getName(), bodyResult)) {
                 continue;
             }
