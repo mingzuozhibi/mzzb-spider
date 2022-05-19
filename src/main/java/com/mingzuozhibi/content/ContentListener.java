@@ -6,9 +6,9 @@ import com.mingzuozhibi.commons.base.BaseController;
 import com.mingzuozhibi.commons.domain.SearchTask;
 import com.mingzuozhibi.commons.mylog.JmsBind;
 import com.mingzuozhibi.support.JmsRecorder;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -26,7 +26,7 @@ public class ContentListener extends BaseController {
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
 
-    @JmsListener(destination = CONTENT_SEARCH)
+    @RabbitListener(queues = CONTENT_SEARCH)
     public void contentSearch(String json) {
         TypeToken<?> typeToken = getParameterized(SearchTask.class, Content.class);
         SearchTask<Content> task = gson.fromJson(json, typeToken.getType());
@@ -36,7 +36,7 @@ public class ContentListener extends BaseController {
         ));
     }
 
-    @JmsListener(destination = NEED_UPDATE_ASINS)
+    @RabbitListener(queues = NEED_UPDATE_ASINS)
     public void needUpdateAsins(String json) {
         JsonArray asins = gson.fromJson(json, JsonArray.class);
         listOpts.trim(NEED_UPDATE_ASINS, 1, 0);

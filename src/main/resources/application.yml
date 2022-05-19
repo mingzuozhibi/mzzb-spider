@@ -1,25 +1,25 @@
 server:
   port: 9001
 spring:
-  application:
-    name: "@pom.artifactId@"
   config:
-    import: 'file:etc/app.properties'
+    import: file:etc/app.properties
 ---
 spring:
   config:
     activate:
       on-profile: dev
-  activemq:
-    broker-url: tcp://localhost:61616
-    password: admin
-    user: admin
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
 ---
 spring:
   config:
     activate:
       on-profile: prod
-  activemq:
-    broker-url: tcp://mingzuozhibi.com:61616
-    password: ${activemq.password:admin}
-    user: admin
+  rabbitmq:
+    host: ${rabbitmq.host:127.0.0.1}
+    port: ${rabbitmq.port:5672}
+    username: ${rabbitmq.username:guest}
+    password: ${rabbitmq.password:guest}
