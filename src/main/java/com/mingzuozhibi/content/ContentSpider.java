@@ -1,10 +1,10 @@
 package com.mingzuozhibi.content;
 
+import com.mingzuozhibi.commons.amqp.AmqpEnums.Name;
+import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.commons.domain.Result;
 import com.mingzuozhibi.commons.domain.SearchTask;
-import com.mingzuozhibi.commons.mylog.JmsBind;
-import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
 import com.mingzuozhibi.support.JmsRecorder;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import static com.mingzuozhibi.support.SpiderUtils.waitResult;
 
 @Slf4j
 @Component
-@JmsBind(Name.SPIDER_CONTENT)
+@LoggerBind(Name.SPIDER_CONTENT)
 public class ContentSpider extends BaseSupport {
 
     @Resource(name = "redisTemplate")

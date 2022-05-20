@@ -10,7 +10,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Set;
 
-import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
+import static com.mingzuozhibi.commons.amqp.AmqpEnums.*;
 
 @Component
 public class ContentWriter extends BaseSupport {

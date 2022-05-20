@@ -1,7 +1,7 @@
 package com.mingzuozhibi.content.auto;
 
+import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
 import com.mingzuozhibi.commons.base.BaseSupport;
-import com.mingzuozhibi.commons.mylog.JmsBind;
 import com.mingzuozhibi.content.Content;
 import com.mingzuozhibi.content.ContentSpider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +14,11 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.mingzuozhibi.commons.mylog.JmsEnums.*;
+import static com.mingzuozhibi.commons.amqp.AmqpEnums.*;
 import static com.mingzuozhibi.commons.utils.ThreadUtils.runWithDaemon;
 
 @RestController
-@JmsBind(Name.SPIDER_CONTENT)
+@LoggerBind(Name.SPIDER_CONTENT)
 public class ContentRunner extends BaseSupport {
 
     @Autowired

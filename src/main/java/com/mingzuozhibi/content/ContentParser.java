@@ -1,6 +1,6 @@
 package com.mingzuozhibi.content;
 
-import com.mingzuozhibi.commons.mylog.JmsLogger;
+import com.mingzuozhibi.commons.amqp.logger.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,9 +26,9 @@ public class ContentParser {
     private static final Pattern patternOfDate2 =
         Pattern.compile("(?<year>\\d{4})年(?<month>\\d{1,2})月(?<dom>\\d{1,2})日");
 
-    private final JmsLogger bind;
+    private final Logger bind;
 
-    public ContentParser(JmsLogger bind) {
+    public ContentParser(Logger bind) {
         this.bind = bind;
     }
 
