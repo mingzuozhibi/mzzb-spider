@@ -1,8 +1,8 @@
 package com.mingzuozhibi.history;
 
+import com.mingzuozhibi.commons.amqp.AmqpEnums.Name;
+import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
 import com.mingzuozhibi.commons.base.BaseController;
-import com.mingzuozhibi.commons.mylog.JmsBind;
-import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +12,7 @@ import static com.mingzuozhibi.commons.utils.ThreadUtils.runWithDaemon;
 import static com.mingzuozhibi.history.HistoryTask.buildTasks;
 
 @RestController
-@JmsBind(Name.SPIDER_HISTORY)
+@LoggerBind(Name.SPIDER_HISTORY)
 public class HistoryRunner extends BaseController {
 
     @Autowired

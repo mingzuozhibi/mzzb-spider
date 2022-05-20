@@ -1,7 +1,7 @@
 package com.mingzuozhibi.support;
 
+import com.mingzuozhibi.commons.amqp.logger.Logger;
 import com.mingzuozhibi.commons.domain.Result;
-import com.mingzuozhibi.commons.mylog.JmsLogger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,7 +11,7 @@ import java.io.*;
 @Getter
 public class JmsRecorder {
 
-    private final JmsLogger bind;
+    private final Logger bind;
     private final String taskName;
     private final int taskSize;
 
@@ -20,7 +20,7 @@ public class JmsRecorder {
     private int breakCount;
     private int doneCount;
 
-    public JmsRecorder(JmsLogger bind, String taskName, int taskSize) {
+    public JmsRecorder(Logger bind, String taskName, int taskSize) {
         this.taskName = taskName;
         this.taskSize = taskSize;
         this.bind = bind;

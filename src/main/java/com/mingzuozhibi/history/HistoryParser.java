@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.mingzuozhibi.commons.mylog.JmsEnums.HISTORY_UPDATE;
+import static com.mingzuozhibi.commons.amqp.AmqpEnums.HISTORY_UPDATE;
 import static com.mingzuozhibi.support.JmsRecorder.writeContent;
 
 @Slf4j
@@ -42,7 +42,7 @@ public class HistoryParser extends BaseSupport {
 
             if (divCount > 0) {
                 recorder.jmsSuccessRow(origin, String.format("找到%d条数据", divCount));
-                jmsSender.send(HISTORY_UPDATE, gson.toJson(result));
+                amqpSender.send(HISTORY_UPDATE, gson.toJson(result));
             } else {
                 recorder.jmsFailedRow(origin, "页面数据不符合格式，或者登入已失效");
                 writeContent(content, origin);

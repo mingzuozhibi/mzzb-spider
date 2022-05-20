@@ -1,9 +1,9 @@
 package com.mingzuozhibi.history;
 
+import com.mingzuozhibi.commons.amqp.AmqpEnums.Name;
+import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.commons.domain.Result;
-import com.mingzuozhibi.commons.mylog.JmsBind;
-import com.mingzuozhibi.commons.mylog.JmsEnums.Name;
 import com.mingzuozhibi.support.JmsRecorder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +13,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
 
-import static com.mingzuozhibi.commons.mylog.JmsEnums.HISTORY_FINISH;
+import static com.mingzuozhibi.commons.amqp.AmqpEnums.HISTORY_FINISH;
 import static com.mingzuozhibi.support.SpiderJsoup.waitResultJsoup;
 
 @Slf4j
 @Service
-@JmsBind(Name.SPIDER_HISTORY)
+@LoggerBind(Name.SPIDER_HISTORY)
 public class HistorySpider extends BaseSupport {
 
     @Autowired
@@ -38,7 +38,9 @@ public class HistorySpider extends BaseSupport {
             if (recorder.checkBreakCount(5))
                 break;
             recorder.jmsStartUpdateRow(task.getName());
-            Result<String> bodyResult = waitResultJsoup(task.getUrl(), cookie.getData());
+            Result<String> bodyResult = waitResultJsoup(task.getUrl(), connection -> {
+                connection.header("cookie", cookie.getData());
+            });
             if (recorder.checkUnfinished(task.getName(), bodyResult)) {
                 continue;
             }
@@ -47,7 +49,7 @@ public class HistorySpider extends BaseSupport {
 
         recorder.jmsSummary();
         recorder.jmsEndUpdate();
-        jmsSender.send(HISTORY_FINISH, "done");
+        amqpSender.send(HISTORY_FINISH, "done");
     }
 
     public Result<String> readCookie() {
