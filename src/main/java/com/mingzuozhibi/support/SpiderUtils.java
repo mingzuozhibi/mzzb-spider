@@ -3,10 +3,12 @@ package com.mingzuozhibi.support;
 import com.mingzuozhibi.commons.domain.Result;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Random;
 
 import static com.mingzuozhibi.support.SpiderCdp4j.waitResultCdp4j;
+import static com.mingzuozhibi.support.SpiderJsoup.waitResultJsoup;
 
 @Slf4j
 public abstract class SpiderUtils {
@@ -24,7 +26,10 @@ public abstract class SpiderUtils {
         if (factory != null) {
             result = waitResultCdp4j(factory, url);
         } else {
-            result = SpiderJsoup.waitResultJsoup(url);
+            result = waitResultJsoup(url);
+        }
+        if (result.isSuccess() && StringUtils.isEmpty(result.getData())) {
+            return Result.ofError(String.format("抓取碟片[%s]：结果为空", asin));
         }
         return result;
     }

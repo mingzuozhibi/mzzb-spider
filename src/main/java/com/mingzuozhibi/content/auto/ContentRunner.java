@@ -74,7 +74,7 @@ public class ContentRunner extends BaseSupport {
                 contentWriter.resetAsinRankHash();
             }
 
-            Map<String, Content> map = contentSpider.updateDiscs(asins);
+            Map<String, Content> map = contentSpider.fetchContents(asins);
 
             if (fullUpdate) {
                 contentWriter.cleanDoneUpdateDiscs();
