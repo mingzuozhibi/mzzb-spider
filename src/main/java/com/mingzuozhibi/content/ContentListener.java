@@ -32,7 +32,7 @@ public class ContentListener extends BaseController {
         SearchTask<Content> task = gson.fromJson(json, typeToken.getType());
         JmsRecorder recorder = new JmsRecorder(bind, "碟片信息", 1);
         amqpSender.send(CONTENT_RETURN, gson.toJson(
-            contentSpider.doUpdateDisc(null, recorder, task)
+            contentSpider.fetchContent(null, recorder, task)
         ));
     }
 

@@ -26,7 +26,7 @@ public class ContentSpider extends BaseSupport {
     @Resource(name = "redisTemplate")
     private HashOperations<String, String, Integer> hashOps;
 
-    public Map<String, Content> updateDiscs(List<String> asins) {
+    public Map<String, Content> fetchContents(List<String> asins) {
         JmsRecorder recorder = new JmsRecorder(bind, "日亚排名", asins.size());
         recorder.jmsStartUpdate();
 
@@ -34,7 +34,7 @@ public class ContentSpider extends BaseSupport {
         doInSessionFactory(factory -> {
             for (String asin : asins) {
                 if (recorder.checkBreakCount(5)) break;
-                SearchTask<Content> task = doUpdateDisc(factory, recorder, new SearchTask<>(asin));
+                SearchTask<Content> task = fetchContent(factory, recorder, new SearchTask<>(asin));
                 if (task.isSuccess()) {
                     discUpdates.put(asin, task.getData());
                 }
@@ -46,43 +46,53 @@ public class ContentSpider extends BaseSupport {
         return discUpdates;
     }
 
-    public SearchTask<Content> doUpdateDisc(
+    public SearchTask<Content> fetchContent(
         SessionFactory factory, JmsRecorder recorder, SearchTask<Content> task
     ) {
-        // 开始查询
         String asin = task.getKey();
-        recorder.jmsStartUpdateRow(asin);
-        Result<String> result = waitResult(factory, asin);
-        if (recorder.checkUnfinished(asin, result)) {
-            return task.withError(result.getMessage());
-        }
-        String content = result.getData();
-
-        // 发现反爬
-        if (content.contains("api-services-support@amazon.com")) {
-            if (content.contains("何かお探しですか？")) {
-                Content discUpdate = new Content();
-                discUpdate.setAsin(asin);
-                discUpdate.setOffTheShelf(true);
-                return task.withData(discUpdate);
-            } else {
-                writeContent(content, asin);
-                recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
-                return task.withError("发现日亚反爬虫系统");
+        try {
+            // 开始查询
+            recorder.jmsStartUpdateRow(asin);
+            Result<String> result = waitResult(factory, asin);
+            if (recorder.checkUnfinished(asin, result)) {
+                return task.withError(result.getMessage());
             }
-        }
+            String content = result.getData();
+            // 发现反爬
+            if (content.contains("api-services-support@amazon.com")) {
+                if (content.contains("何かお探しですか？")) {
+                    Content discUpdate = new Content();
+                    discUpdate.setAsin(asin);
+                    discUpdate.setOffTheShelf(true);
+                    return task.withData(discUpdate);
+                } else {
+                    writeContent(content, asin);
+                    recorder.jmsFailedRow(asin, "发现日亚反爬虫系统");
+                    return task.withError("发现日亚反爬虫系统");
+                }
+            }
+            return parseContent(recorder, task, content);
 
+        } catch (Exception e) {
+            // 捕获异常
+            log.warn(String.format("fetchContent(%s)", asin), e);
+            return task.withError(e.toString());
+        }
+    }
+
+    private SearchTask<Content> parseContent(
+        JmsRecorder recorder, SearchTask<Content> task, String content
+    ) {
+        String asin = task.getKey();
         try {
             // 开始解析
             Optional<Content> discRef = new ContentParser(bind).parse(asin, content);
-
             // 数据异常
             if (!discRef.isPresent()) {
                 writeContent(content, asin);
                 recorder.jmsFailedRow(asin, "页面数据未通过校验");
                 return task.withError("页面数据未通过校验");
             }
-
             // 解析成功
             Content discUpdate = discRef.get();
             Integer prevRank = hashOps.get("asin.rank.hash", asin);
@@ -94,8 +104,8 @@ public class ContentSpider extends BaseSupport {
             // 捕获异常
             recorder.jmsErrorRow(asin, e);
             writeContent(content, asin);
-            log.warn("parsing error", e);
-            return task.withError(e.getMessage());
+            log.warn(String.format("parseContent(%s)", asin), e);
+            return task.withError(e.toString());
         }
     }
 
