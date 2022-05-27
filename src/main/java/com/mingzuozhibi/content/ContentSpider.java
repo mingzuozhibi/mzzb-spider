@@ -88,7 +88,7 @@ public class ContentSpider extends BaseSupport {
             // 开始解析
             Optional<Content> discRef = new ContentParser(bind).parse(asin, content);
             // 数据异常
-            if (!discRef.isPresent()) {
+            if (discRef.isEmpty()) {
                 writeContent(content, asin);
                 recorder.jmsFailedRow(asin, "页面数据未通过校验");
                 return task.withError("页面数据未通过校验");
