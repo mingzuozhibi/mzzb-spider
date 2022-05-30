@@ -1,15 +1,9 @@
 package com.mingzuozhibi.history;
 
-import lombok.Value;
-
 import java.util.ArrayList;
 import java.util.List;
 
-@Value
-public class HistoryTask {
-
-    String name;
-    String url;
+public record HistoryTask(String name, String url) {
 
     private static final String BASE_URL1 = "https://www.amazon.co.jp/s/query?i=dvd&" +
         "rh=n%3A561958%2Cn%3A562002%2Cn%3A562020&" +

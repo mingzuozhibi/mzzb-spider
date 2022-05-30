@@ -178,18 +178,22 @@ public class ContentParser {
     private void parseTypeByLine(Document document) {
         for (Element element : document.select("#bylineInfo span:not(.a-color-secondary)")) {
             switch (element.text()) {
-                case "Blu-ray":
+                case "Blu-ray" -> {
                     content.setType("Bluray");
                     return;
-                case "DVD":
+                }
+                case "DVD" -> {
                     content.setType("Dvd");
                     return;
-                case "CD":
+                }
+                case "CD" -> {
                     content.setType("Cd");
                     return;
-                case "セット買い":
+                }
+                case "セット買い" -> {
                     setBuyset();
                     return;
+                }
             }
         }
     }
@@ -199,20 +203,10 @@ public class ContentParser {
         if (elements.size() > 0) {
             String type = getText(elements);
             switch (type) {
-                case "3D":
-                case "4K":
-                case "Blu-ray":
-                    content.setType("Bluray");
-                    break;
-                case "DVD":
-                    content.setType("Dvd");
-                    break;
-                case "CD":
-                    content.setType("Cd");
-                    break;
-                case "セット買い":
-                    setBuyset();
-                    break;
+                case "3D", "4K", "Blu-ray" -> content.setType("Bluray");
+                case "DVD" -> content.setType("Dvd");
+                case "CD" -> content.setType("Cd");
+                case "セット買い" -> setBuyset();
             }
         }
     }
