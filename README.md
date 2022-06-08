@@ -20,17 +20,16 @@
 
 **安装依赖**
 
-* Install OpenJDK-8
-* Install MySQL-8
-* Install ActiveMQ-5
+* Install OpenJDK-17
 * Install RedisServer-6
 
 **初始配置**
 
 ```shell
-bash bin/init_mysql.sh
 cp etc/app.properties.default etc/app.properties
 # edit etc/app.properties, change passwords
+
+# copy amazon cookie to etc/amazon-cookie
 ```
 
 **测试运行**
