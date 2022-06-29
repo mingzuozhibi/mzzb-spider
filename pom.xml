@@ -12,7 +12,7 @@
 
     <groupId>com.mingzuozhibi</groupId>
     <artifactId>mzzb-spider</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
 
     <name>mzzb-spider</name>
     <description>Spider for mingzuozhibi.com</description>
