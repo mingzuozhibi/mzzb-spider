@@ -64,6 +64,7 @@ public class ContentSpider extends BaseSupport {
                     Content discUpdate = new Content();
                     discUpdate.setAsin(asin);
                     discUpdate.setOffTheShelf(true);
+                    recorder.jmsSuccessRow(asin, "碟片可能已下架");
                     return task.withData(discUpdate);
                 } else {
                     writeContent(content, asin);
@@ -76,6 +77,7 @@ public class ContentSpider extends BaseSupport {
         } catch (Exception e) {
             // 捕获异常
             log.warn(String.format("fetchContent(%s)", asin), e);
+            recorder.jmsErrorRow(asin, e);
             return task.withError(e.toString());
         }
     }
@@ -102,9 +104,9 @@ public class ContentSpider extends BaseSupport {
 
         } catch (Exception e) {
             // 捕获异常
-            recorder.jmsErrorRow(asin, e);
             writeContent(content, asin);
             log.warn(String.format("parseContent(%s)", asin), e);
+            recorder.jmsErrorRow(asin, e);
             return task.withError(e.toString());
         }
     }
