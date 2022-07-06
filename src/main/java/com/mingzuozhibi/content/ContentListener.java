@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
 import com.mingzuozhibi.commons.base.BaseController;
 import com.mingzuozhibi.commons.domain.SearchTask;
+import com.mingzuozhibi.content.auto.ContentRunner;
 import com.mingzuozhibi.support.JmsRecorder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,9 @@ public class ContentListener extends BaseController {
 
     @Autowired
     private ContentSpider contentSpider;
+
+    @Autowired
+    private ContentRunner contentRunner;
 
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
@@ -44,6 +48,7 @@ public class ContentListener extends BaseController {
             listOpts.rightPush(NEED_UPDATE_ASINS, jsonElement.getAsString());
         });
         bind.debug("JMS <- %s size=%d", NEED_UPDATE_ASINS, asins.size());
+        contentRunner.startUpdate();
     }
 
 }
