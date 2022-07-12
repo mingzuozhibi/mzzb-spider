@@ -4,9 +4,9 @@ import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.content.Content;
 import com.mingzuozhibi.content.ContentSpider;
+import com.mingzuozhibi.history.HistorySpider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,10 +16,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.mingzuozhibi.commons.amqp.AmqpEnums.*;
 import static com.mingzuozhibi.commons.utils.ThreadUtils.runWithDaemon;
+import static com.mingzuozhibi.history.HistoryTask.buildTasks;
 
 @RestController
 @LoggerBind(Name.SPIDER_CONTENT)
 public class ContentRunner extends BaseSupport {
+
+    @Autowired
+    private HistorySpider historySpider;
 
     @Autowired
     private ContentSpider contentSpider;
@@ -35,8 +39,15 @@ public class ContentRunner extends BaseSupport {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
 
+    @GetMapping("/startUpdate")
+    public void startUpdate() {
+        runWithDaemon(bind, "上架抓取", () -> {
+            historySpider.runFetchTasks(buildTasks(60, 10));
+            startFullUpdate();
+        });
+    }
+
     @GetMapping("/startFullUpdate")
-    @Scheduled(cron = "0 12 1/4 * * ?")
     public void startFullUpdate() {
         bind.notify("计划任务：开始全量更新");
         List<String> asins = listOps.range(NEED_UPDATE_ASINS, 0, -1);
@@ -50,7 +61,6 @@ public class ContentRunner extends BaseSupport {
     }
 
     @GetMapping("/startNextUpdate")
-    @Scheduled(cron = "0 12 3/4 * * ?")
     public void startNextUpdate() {
         bind.notify("计划任务：开始补充更新");
         List<String> asins = listOps.range(NEXT_UPDATE_ASINS, 0, -1);

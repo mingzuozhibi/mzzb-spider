@@ -16,8 +16,7 @@ public abstract class SpiderUtils {
     public static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/99.0.4844.74 Safari/537.36 " +
-            "Edg/99.0.1150.46";
+            "Chrome/103.0.0.0 Safari/537.36";
 
     public static Result<String> waitResult(SessionFactory factory, String asin) {
         String url = buildUrl(asin);
