@@ -28,7 +28,7 @@ public class ContentSender extends BaseSupport {
             bind.warning("无法同步全量更新结果：没有数据");
         } else {
             amqpSender.send(DONE_UPDATE_DISCS, buildDiscs(discs));
-            bind.success("正在同步全量更新结果：共%d个", discs.size());
+            bind.success("正在同步全量更新结果：共%d个".formatted(discs.size()));
         }
     }
 
@@ -39,7 +39,7 @@ public class ContentSender extends BaseSupport {
             bind.warning("无法同步上次更新结果：没有数据");
         } else {
             amqpSender.send(PREV_UPDATE_DISCS, buildDiscs(discs));
-            bind.success("正在同步上次更新结果：共%d个", discs.size());
+            bind.success("正在同步上次更新结果：共%d个".formatted(discs.size()));
         }
     }
 
@@ -60,8 +60,8 @@ public class ContentSender extends BaseSupport {
             DateResult result = gson.fromJson(json, DateResult.class);
             if (result.count() == 0) continue;
             amqpSender.send(LAST_UPDATE_DISCS, json);
-            String format = "正在同步[%s]更新结果：共%d个";
-            bind.success(format, fmtDateTime.format(result.getDate()), result.count());
+            bind.success("正在同步[%s]更新结果：共%d个".formatted(
+                fmtDateTime.format(result.getDate()), result.count()));
             return;
         }
         bind.warning("不能同步最后更新结果：没有数据");

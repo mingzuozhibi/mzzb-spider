@@ -3,6 +3,7 @@ package com.mingzuozhibi.commons.utils;
 import com.mingzuozhibi.commons.amqp.logger.Logger;
 
 import java.time.Instant;
+import java.util.Random;
 
 public abstract class ThreadUtils {
 
@@ -11,7 +12,8 @@ public abstract class ThreadUtils {
             try {
                 callback.call();
             } catch (Exception e) {
-                bind.error("runWithDaemon(name=%s): %s", name, e);
+                bind.error("runWithDaemon(name=%s): %s".formatted(name, e));
+                e.printStackTrace();
             }
         });
         thread.setDaemon(true);
@@ -46,6 +48,21 @@ public abstract class ThreadUtils {
         synchronized (lock) {
             lock.notifyAll();
         }
+    }
+
+    public static void sleepMillis(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ignored) {
+        }
+    }
+
+    public static void sleepSeconds(int seconds) {
+        sleepMillis(seconds * 100L);
+    }
+
+    public static void sleepSeconds(int minSeconds, int maxSeconds) {
+        sleepSeconds(new Random().nextInt(minSeconds, maxSeconds + 1));
     }
 
 }

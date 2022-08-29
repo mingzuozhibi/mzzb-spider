@@ -47,7 +47,7 @@ public class ContentListener extends BaseController {
         asins.forEach(jsonElement -> {
             listOpts.rightPush(NEED_UPDATE_ASINS, jsonElement.getAsString());
         });
-        bind.debug("JMS <- %s size=%d", NEED_UPDATE_ASINS, asins.size());
+        bind.debug("JMS <- %s size=%d".formatted(NEED_UPDATE_ASINS, asins.size()));
         contentRunner.startUpdate();
     }
 
