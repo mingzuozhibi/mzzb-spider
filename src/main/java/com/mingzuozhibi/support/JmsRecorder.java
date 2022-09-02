@@ -27,16 +27,16 @@ public class JmsRecorder {
     }
 
     public void jmsStartUpdate() {
-        bind.notify("更新%s：共%d个", this.taskName, this.taskSize);
+        bind.notify("更新%s：共%d个".formatted(this.taskName, this.taskSize));
     }
 
     public void jmsEndUpdate() {
-        bind.notify("更新%s：结束", this.taskName);
+        bind.notify("更新%s：结束".formatted(this.taskName));
     }
 
     public boolean checkBreakCount(int maxBreakCount) {
         if (this.breakCount >= maxBreakCount) {
-            bind.warning("更新%s：连续%d次更新失败，任务提前终止", this.taskName, maxBreakCount);
+            bind.warning("更新%s：连续%d次更新失败，任务提前终止".formatted(this.taskName, maxBreakCount));
             return true;
         }
         return false;
@@ -44,13 +44,13 @@ public class JmsRecorder {
 
     public void jmsStartUpdateRow(String origin) {
         this.fetchCount++;
-        bind.info("更新开始：[%s](%s/%d)", origin, this.fetchCount, this.taskSize);
+        bind.info("更新开始：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
 
     public void jmsSuccessRow(String origin, String message) {
         this.breakCount = 0;
         this.doneCount++;
-        bind.info("更新成功：[%s][%s]", origin, message);
+        bind.info("更新成功：[%s][%s]".formatted(origin, message));
     }
 
     public boolean checkUnfinished(String origin, Result<?> result) {
@@ -59,29 +59,30 @@ public class JmsRecorder {
         }
         this.breakCount++;
         this.errorCount++;
-        bind.warning("抓取失败：%s", result.getMessage());
-        bind.warning("更新失败：[%s](%s/%d)", origin, this.fetchCount, this.taskSize);
+        bind.warning("抓取失败：%s".formatted(result.getMessage()));
+        bind.warning("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
         return true;
     }
 
     public void jmsFailedRow(String origin, String message) {
         this.breakCount++;
         this.errorCount++;
-        bind.warning("数据异常：%s", message);
-        bind.warning("更新失败：[%s](%s/%d)", origin, this.fetchCount, this.taskSize);
+        bind.warning("数据异常：%s".formatted(message));
+        bind.warning("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
 
     public void jmsErrorRow(String origin, Exception e) {
         this.breakCount++;
         this.errorCount++;
-        bind.error("捕获异常：%s", e.toString());
-        bind.error("更新失败：[%s](%s/%d)", origin, this.fetchCount, this.taskSize);
+        log.debug("捕获异常：", e);
+        bind.error("捕获异常：%s".formatted(e.toString()));
+        bind.error("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
 
     public void jmsSummary() {
         int skipCount = this.taskSize - this.fetchCount;
-        bind.notify("There are %d tasks, %d updates, %d successes, %d failures, and %d skips.",
-            this.taskSize, this.fetchCount, this.doneCount, this.errorCount, skipCount);
+        bind.notify("There are %d tasks, %d updates, %d successes, %d failures, and %d skips.".formatted(
+            this.taskSize, this.fetchCount, this.doneCount, this.errorCount, skipCount));
     }
 
     public static void writeContent(String content, String origin) {

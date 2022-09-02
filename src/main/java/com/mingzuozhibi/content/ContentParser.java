@@ -51,11 +51,11 @@ public class ContentParser {
         parseAsinAndDateAndRank(document);
 
         if (StringUtils.isEmpty(content.getAsin())) {
-            bind.warning("解析信息：[%s][未发现商品编号]", asin);
+            bind.warning("解析信息：[%s][未发现商品编号]".formatted(asin));
             return Optional.empty();
         }
         if (!Objects.equals(content.getAsin(), asin)) {
-            bind.warning("解析信息：[%s][商品编号不符合]", asin);
+            bind.warning("解析信息：[%s][商品编号不符合]".formatted(asin));
             return Optional.empty();
         }
 
@@ -67,7 +67,7 @@ public class ContentParser {
         parseTitle(document);
 
         if (StringUtils.isEmpty(content.getTitle())) {
-            bind.warning("解析信息：[%s][未发现碟片标题]", asin);
+            bind.warning("解析信息：[%s][未发现碟片标题]".formatted(asin));
             return Optional.empty();
         }
 
@@ -94,9 +94,9 @@ public class ContentParser {
         }
         if (Objects.isNull(content.getDate())) {
             if (content.isBuyset()) {
-                bind.info("解析信息：[%s][未发现套装发售日期]", asin);
+                bind.info("解析信息：[%s][未发现套装发售日期]".formatted(asin));
             } else {
-                bind.warning("解析信息：[%s][未发现发售日期]", asin);
+                bind.warning("解析信息：[%s][未发现发售日期]".formatted(asin));
             }
         }
 
@@ -226,34 +226,34 @@ public class ContentParser {
             boolean likeBD = title.contains("BD");
             if (isBD && !isDVD) {
                 content.setType("Bluray");
-                bind.info("解析信息：[%s][推测类型为BD]", asin);
+                bind.info("解析信息：[%s][推测类型为BD]".formatted(asin));
                 return;
             }
             if (isDVD && !isBD) {
                 content.setType("Dvd");
-                bind.info("解析信息：[%s][推测类型为DVD]", asin);
+                bind.info("解析信息：[%s][推测类型为DVD]".formatted(asin));
                 return;
             }
             if (hasBD && !hasDVD) {
-                bind.info("解析信息：[%s][推测类型为BD]", asin);
+                bind.info("解析信息：[%s][推测类型为BD]".formatted(asin));
                 content.setType("Bluray");
                 return;
             }
             if (hasDVD && !hasBD) {
-                bind.info("解析信息：[%s][推测类型为DVD]", asin);
+                bind.info("解析信息：[%s][推测类型为DVD]".formatted(asin));
                 content.setType("Dvd");
                 return;
             }
             if (likeBD) {
-                bind.notify("解析信息：[%s][疑似类型为BD]", asin);
+                bind.notify("解析信息：[%s][疑似类型为BD]".formatted(asin));
                 content.setType("Bluray");
                 return;
             }
-            bind.warning("解析信息：[%s][推测类型为DVD或BD]", asin);
+            bind.warning("解析信息：[%s][推测类型为DVD或BD]".formatted(asin));
             content.setType("Auto");
             return;
         }
-        bind.warning("解析信息：[%s][推测类型为其他]", asin);
+        bind.warning("解析信息：[%s][推测类型为其他]".formatted(asin));
         content.setType("Other");
     }
 
@@ -267,7 +267,7 @@ public class ContentParser {
             Matcher matcher = patternOfDate2.matcher(getText(elements));
             if (matcher.find()) {
                 setDate(matcher);
-                bind.info("解析信息：[%s][发现套装发售日期]", asin);
+                bind.info("解析信息：[%s][发现套装发售日期]".formatted(asin));
             }
         }
     }
@@ -278,7 +278,7 @@ public class ContentParser {
             Matcher matcher = patternOfDate2.matcher(getText(elements));
             if (matcher.find()) {
                 setDate(matcher);
-                bind.info("解析信息：[%s][发现疑似发售日期]", asin);
+                bind.info("解析信息：[%s][发现疑似发售日期]".formatted(asin));
             }
         }
     }
@@ -290,7 +290,7 @@ public class ContentParser {
     private void setBuyset() {
         if (!content.isBuyset()) {
             content.setBuyset(true);
-            bind.info("解析信息：[%s][检测到套装商品]", asin);
+            bind.info("解析信息：[%s][检测到套装商品]".formatted(asin));
         }
     }
 
@@ -311,7 +311,7 @@ public class ContentParser {
                 .forEach(builder::appendCodePoint);
             return Integer.parseInt(builder.toString());
         } catch (RuntimeException e) {
-            bind.error("解析信息：[%s][parseNumber error：%s]", asin, e);
+            bind.error("解析信息：[%s][parseNumber error：%s]".formatted(asin, e));
             return null;
         }
     }
