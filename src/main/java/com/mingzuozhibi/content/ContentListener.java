@@ -13,6 +13,7 @@ import org.springframework.data.redis.core.ListOperations;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.gson.reflect.TypeToken.getParameterized;
 import static com.mingzuozhibi.commons.amqp.AmqpEnums.*;
@@ -30,6 +31,8 @@ public class ContentListener extends BaseController {
     @Resource(name = "redisTemplate")
     private ListOperations<String, String> listOpts;
 
+    private final AtomicBoolean isStart = new AtomicBoolean(false);
+
     @RabbitListener(queues = CONTENT_SEARCH)
     public void contentSearch(String json) {
         TypeToken<?> typeToken = getParameterized(SearchTask.class, Content.class);
@@ -42,13 +45,15 @@ public class ContentListener extends BaseController {
 
     @RabbitListener(queues = NEED_UPDATE_ASINS)
     public void needUpdateAsins(String json) {
-        JsonArray asins = gson.fromJson(json, JsonArray.class);
-        listOpts.trim(NEED_UPDATE_ASINS, 1, 0);
-        asins.forEach(jsonElement -> {
-            listOpts.rightPush(NEED_UPDATE_ASINS, jsonElement.getAsString());
-        });
-        bind.debug("JMS <- %s size=%d".formatted(NEED_UPDATE_ASINS, asins.size()));
-        contentRunner.startUpdate();
+        if (isStart.compareAndSet(false, true)) {
+            JsonArray asins = gson.fromJson(json, JsonArray.class);
+            listOpts.trim(NEED_UPDATE_ASINS, 1, 0);
+            asins.forEach(jsonElement -> {
+                listOpts.rightPush(NEED_UPDATE_ASINS, jsonElement.getAsString());
+            });
+            bind.debug("JMS <- %s size=%d".formatted(NEED_UPDATE_ASINS, asins.size()));
+            contentRunner.startUpdate();
+        }
     }
 
 }
