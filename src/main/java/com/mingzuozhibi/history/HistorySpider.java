@@ -32,19 +32,24 @@ public class HistorySpider extends BaseSupport {
 
         var doneResults = new LinkedList<History>();
         for (var task : tasks) {
-            if (recorder.checkBreakCount(5)) break;
-            recorder.jmsStartUpdateRow(task.getName());
-            var result = fetchHistory(task);
-            if (result.isSuccess()) {
-                var rows = result.getData().size();
-                if (rows > 0) {
-                    doneResults.addAll(result.getData());
-                    recorder.jmsSuccessRow(task.getName(), "找到%d条数据".formatted(rows));
+            String origin = task.getName();
+            try {
+                if (recorder.checkBreakCount(5)) break;
+                recorder.jmsStartUpdateRow(origin);
+                var result = fetchHistory(task);
+                if (result.isSuccess()) {
+                    var rows = result.getData().size();
+                    if (rows > 0) {
+                        doneResults.addAll(result.getData());
+                        recorder.jmsSuccessRow(origin, "找到%d条数据".formatted(rows));
+                    } else {
+                        recorder.jmsFailedRow(origin, "页面数据不符合格式，或者登入已失效");
+                    }
                 } else {
-                    recorder.jmsFailedRow(task.getName(), "页面数据不符合格式，或者登入已失效");
+                    recorder.jmsFailedRow(origin, result.getMessage());
                 }
-            } else {
-                recorder.jmsFailedRow(task.getName(), result.getMessage());
+            } catch (Exception e) {
+                recorder.jmsErrorRow(origin, e);
             }
         }
 
