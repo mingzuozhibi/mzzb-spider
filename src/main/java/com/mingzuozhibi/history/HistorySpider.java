@@ -33,18 +33,18 @@ public class HistorySpider extends BaseSupport {
         var doneResults = new LinkedList<History>();
         for (var task : tasks) {
             if (recorder.checkBreakCount(5)) break;
-            recorder.jmsStartUpdateRow(task.name());
+            recorder.jmsStartUpdateRow(task.getName());
             var result = fetchHistory(task);
             if (result.isSuccess()) {
                 var rows = result.getData().size();
                 if (rows > 0) {
                     doneResults.addAll(result.getData());
-                    recorder.jmsSuccessRow(task.name(), "找到%d条数据".formatted(rows));
+                    recorder.jmsSuccessRow(task.getName(), "找到%d条数据".formatted(rows));
                 } else {
-                    recorder.jmsFailedRow(task.name(), "页面数据不符合格式，或者登入已失效");
+                    recorder.jmsFailedRow(task.getName(), "页面数据不符合格式，或者登入已失效");
                 }
             } else {
-                recorder.jmsFailedRow(task.name(), result.getMessage());
+                recorder.jmsFailedRow(task.getName(), result.getMessage());
             }
         }
 
@@ -55,7 +55,7 @@ public class HistorySpider extends BaseSupport {
 
     private Result<List<History>> fetchHistory(TaskOfHistory task) {
         if (cookie.isSuccess()) {
-            var bodyResult = waitResultJsoup(task.url(), connection -> {
+            var bodyResult = waitResultJsoup(task.getUrl(), connection -> {
                 connection.header("cookie", cookie.getData());
             });
             if (bodyResult.isSuccess()) {

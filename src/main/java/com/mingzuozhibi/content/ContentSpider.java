@@ -27,9 +27,9 @@ public class ContentSpider extends BaseSupport {
 
         var results = new LinkedList<Content>();
         doInSessionFactory(factory -> {
-            tasks.forEach(task -> ranks.put(task.asin(), task.rank()));
+            tasks.forEach(task -> ranks.put(task.getAsin(), task.getRank()));
             for (var task : tasks) {
-                var asin = task.asin();
+                var asin = task.getAsin();
                 if (recorder.checkBreakCount(5)) break;
                 var bodyResult = waitResult(factory, asin);
                 var result = fetchContent(recorder, new SearchTask<>(asin), bodyResult);
