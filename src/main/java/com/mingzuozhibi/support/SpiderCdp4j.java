@@ -2,7 +2,6 @@ package com.mingzuozhibi.support;
 
 import com.mingzuozhibi.commons.domain.Result;
 import io.webfolder.cdp.Launcher;
-import io.webfolder.cdp.session.Session;
 import io.webfolder.cdp.session.SessionFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,12 +13,12 @@ import java.util.function.Consumer;
 public abstract class SpiderCdp4j {
 
     public static void doInSessionFactory(Consumer<SessionFactory> consumer) {
-        String uuid = UUID.randomUUID().toString().substring(0, 8);
+        var uuid = UUID.randomUUID().toString().substring(0, 8);
         List<String> command = new ArrayList<>();
         command.add("--headless");
         command.add("--target.name=" + uuid);
-        Launcher launcher = new Launcher();
-        try (SessionFactory factory = launcher.launch(command)) {
+        var launcher = new Launcher();
+        try (var factory = launcher.launch(command)) {
             consumer.accept(factory);
         } catch (RuntimeException e) {
             log.warn(e.getMessage(), e);
@@ -28,10 +27,10 @@ public abstract class SpiderCdp4j {
     }
 
     private static void killChrome(String uuid) {
-        String format = "ps -x | grep 'target.name=%s' | grep -v grep | awk '{print $1}' | xargs -t kill -9 2>&1";
-        String[] cmds = {"/bin/bash", "-l", "-c", String.format(format, uuid)};
+        var format = "ps -x | grep 'target.name=%s' | grep -v grep | awk '{print $1}' | xargs -t kill -9 2>&1";
+        var cmds = new String[]{"/bin/bash", "-l", "-c", String.format(format, uuid)};
         try {
-            Process process = Runtime.getRuntime().exec(cmds);
+            var process = Runtime.getRuntime().exec(cmds);
             process.waitFor();
             log.info("kill chrome " + uuid);
         } catch (IOException | InterruptedException e) {
@@ -40,7 +39,7 @@ public abstract class SpiderCdp4j {
     }
 
     public static Result<String> waitResultCdp4j(SessionFactory factory, String url) {
-        try (Session session = factory.create()) {
+        try (var session = factory.create()) {
             session.clearCookies();
             session.setUserAgent(SpiderUtils.USER_AGENT);
             session.navigate(url);
