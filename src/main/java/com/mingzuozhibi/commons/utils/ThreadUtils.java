@@ -1,6 +1,6 @@
 package com.mingzuozhibi.commons.utils;
 
-import com.mingzuozhibi.commons.amqp.logger.Logger;
+import com.mingzuozhibi.commons.logger.Logger;
 
 import java.time.Instant;
 import java.util.Random;
@@ -8,7 +8,7 @@ import java.util.Random;
 public abstract class ThreadUtils {
 
     public static void runWithDaemon(Logger bind, String name, Callback callback) {
-        Thread thread = new Thread(() -> {
+        var thread = new Thread(() -> {
             try {
                 callback.call();
             } catch (Exception e) {
@@ -27,9 +27,9 @@ public abstract class ThreadUtils {
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void waitSecond(Object lock, int seconds) {
         synchronized (lock) {
-            long target = Instant.now().plusSeconds(seconds).toEpochMilli();
+            var target = Instant.now().plusSeconds(seconds).toEpochMilli();
             while (true) {
-                long timeout = target - Instant.now().toEpochMilli();
+                var timeout = target - Instant.now().toEpochMilli();
                 if (timeout > 0) {
                     try {
                         lock.wait(timeout);
