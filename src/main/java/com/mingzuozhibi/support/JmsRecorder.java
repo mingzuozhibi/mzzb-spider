@@ -1,11 +1,8 @@
 package com.mingzuozhibi.support;
 
-import com.mingzuozhibi.commons.amqp.logger.Logger;
-import com.mingzuozhibi.commons.domain.Result;
+import com.mingzuozhibi.commons.logger.Logger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.*;
 
 @Slf4j
 @Getter
@@ -53,17 +50,6 @@ public class JmsRecorder {
         bind.info("更新成功：[%s][%s]".formatted(origin, message));
     }
 
-    public boolean checkUnfinished(String origin, Result<?> result) {
-        if (!result.hasError()) {
-            return false;
-        }
-        this.breakCount++;
-        this.errorCount++;
-        bind.warning("抓取失败：%s".formatted(result.getMessage()));
-        bind.warning("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
-        return true;
-    }
-
     public void jmsFailedRow(String origin, String message) {
         this.breakCount++;
         this.errorCount++;
@@ -74,28 +60,15 @@ public class JmsRecorder {
     public void jmsErrorRow(String origin, Exception e) {
         this.breakCount++;
         this.errorCount++;
-        log.debug("捕获异常：", e);
-        bind.error("捕获异常：%s".formatted(e.toString()));
+        log.debug("遇到错误：", e);
+        bind.error("遇到错误：%s".formatted(e.toString()));
         bind.error("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
 
     public void jmsSummary() {
-        int skipCount = this.taskSize - this.fetchCount;
+        var skipCount = this.taskSize - this.fetchCount;
         bind.notify("There are %d tasks, %d updates, %d successes, %d failures, and %d skips.".formatted(
             this.taskSize, this.fetchCount, this.doneCount, this.errorCount, skipCount));
-    }
-
-    public static void writeContent(String content, String origin) {
-        try {
-            File file = File.createTempFile("spider", ".html");
-            try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file))) {
-                bufferedWriter.write(content);
-                bufferedWriter.flush();
-                log.warn("An error occurred while parsing the content: [{}][file={}]", origin, file.getAbsolutePath());
-            }
-        } catch (IOException e) {
-            log.warn("An error occurred while recording the error content", e);
-        }
     }
 
 }

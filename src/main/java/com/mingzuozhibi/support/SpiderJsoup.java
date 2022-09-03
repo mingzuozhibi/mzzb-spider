@@ -15,7 +15,7 @@ public abstract class SpiderJsoup {
 
     public static Result<String> waitResultJsoup(String url, Consumer<Connection> consumer) {
         try {
-            Connection connection = Jsoup.connect(url)
+            var connection = Jsoup.connect(url)
                 .referrer("https://www.google.com/")
                 .userAgent(SpiderUtils.USER_AGENT)
                 .maxBodySize(10 * 1024 * 1024)

@@ -19,7 +19,7 @@ public abstract class SpiderUtils {
             "Chrome/103.0.0.0 Safari/537.36";
 
     public static Result<String> waitResult(SessionFactory factory, String asin) {
-        String url = buildUrl(asin);
+        var url = buildUrl(asin);
         log.debug("{}: {}", asin, url);
         Result<String> result;
         if (factory != null) {
@@ -43,8 +43,8 @@ public abstract class SpiderUtils {
     }
 
     private static String randomWord(int count) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < count; i++) {
+        var builder = new StringBuilder();
+        for (var i = 0; i < count; i++) {
             builder.append(randomChar());
         }
         return builder.toString();

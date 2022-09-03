@@ -1,67 +1,83 @@
 package com.mingzuozhibi.history;
 
-import com.mingzuozhibi.commons.amqp.AmqpEnums.Name;
-import com.mingzuozhibi.commons.amqp.logger.LoggerBind;
+import com.mingzuozhibi.commons.base.BaseKeys.Name;
 import com.mingzuozhibi.commons.base.BaseSupport;
 import com.mingzuozhibi.commons.domain.Result;
+import com.mingzuozhibi.commons.logger.LoggerBind;
 import com.mingzuozhibi.support.JmsRecorder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.LinkedList;
 import java.util.List;
 
-import static com.mingzuozhibi.commons.amqp.AmqpEnums.HISTORY_FINISH;
 import static com.mingzuozhibi.support.SpiderJsoup.waitResultJsoup;
 
 @Slf4j
-@Service
+@Component
 @LoggerBind(Name.SPIDER_HISTORY)
 public class HistorySpider extends BaseSupport {
+
+    public final Result<String> cookie = readCookie();
 
     @Autowired
     private HistoryParser historyParser;
 
-    public void runFetchTasks(List<HistoryTask> tasks) {
-        JmsRecorder recorder = new JmsRecorder(bind, "上架信息", tasks.size());
+    public List<History> fetchAllHistory(List<TaskOfHistory> tasks) {
+        var recorder = new JmsRecorder(bind, "上架信息", tasks.size());
         recorder.jmsStartUpdate();
 
-        Result<String> cookie = readCookie();
-        if (cookie.hasError()) {
-            bind.error(cookie.getMessage());
-            return;
-        }
-
-        for (HistoryTask task : tasks) {
-            if (recorder.checkBreakCount(5))
-                break;
+        var doneResults = new LinkedList<History>();
+        for (var task : tasks) {
+            if (recorder.checkBreakCount(5)) break;
             recorder.jmsStartUpdateRow(task.name());
-            Result<String> bodyResult = waitResultJsoup(task.url(), connection -> {
-                connection.header("cookie", cookie.getData());
-            });
-            if (recorder.checkUnfinished(task.name(), bodyResult)) {
-                continue;
+            var result = fetchHistory(task);
+            if (result.isSuccess()) {
+                var rows = result.getData().size();
+                if (rows > 0) {
+                    doneResults.addAll(result.getData());
+                    recorder.jmsSuccessRow(task.name(), "找到%d条数据".formatted(rows));
+                } else {
+                    recorder.jmsFailedRow(task.name(), "页面数据不符合格式，或者登入已失效");
+                }
+            } else {
+                recorder.jmsFailedRow(task.name(), result.getMessage());
             }
-            historyParser.parse(recorder, bodyResult.getData(), task.name());
         }
 
         recorder.jmsSummary();
         recorder.jmsEndUpdate();
-        amqpSender.send(HISTORY_FINISH, "done");
+        return doneResults;
     }
 
-    public Result<String> readCookie() {
-        try {
-            File file = new File("etc", "amazon-cookie");
-            if (!file.exists() || !file.isFile() || !file.canRead()) {
-                return Result.ofError("未能读取到cookie: file can't read");
+    private Result<List<History>> fetchHistory(TaskOfHistory task) {
+        if (cookie.isSuccess()) {
+            var bodyResult = waitResultJsoup(task.url(), connection -> {
+                connection.header("cookie", cookie.getData());
+            });
+            if (bodyResult.isSuccess()) {
+                return historyParser.parse(bodyResult.getData());
+            } else {
+                return Result.ofError(bodyResult.getMessage());
             }
-            return Result.ofData(Files.readAllLines(file.toPath()).get(0));
+        }
+        return Result.ofError(cookie.getMessage());
+    }
+
+    private Result<String> readCookie() {
+        try {
+            var file = new File("etc", "amazon-cookie");
+            if (file.exists() && file.isFile() && file.canRead()) {
+                return Result.ofData(Files.readAllLines(file.toPath()).get(0));
+            }
+            log.error("读取Cookie失败：" + file.getAbsolutePath());
+            return Result.ofError("读取Cookie失败");
         } catch (Exception e) {
-            log.error("未能读取到cookie", e);
-            return Result.ofError("未能读取到cookie: " + e);
+            log.error("读取Cookie失败：", e);
+            return Result.ofError("读取Cookie失败");
         }
     }
 
