@@ -1,17 +1,15 @@
 package com.mingzuozhibi.support;
 
 import com.mingzuozhibi.commons.domain.Result;
+import com.mingzuozhibi.commons.utils.EnvLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
-import java.util.Objects;
 import java.util.function.Consumer;
 
 @Slf4j
 public abstract class SpiderJsoup {
-
-    private static final boolean DEV_MODE = Objects.equals(System.getenv("DEV_MODE"), "TRUE");
 
     public static Result<String> waitResultJsoup(String url, Consumer<Connection> consumer) {
         try {
@@ -20,8 +18,8 @@ public abstract class SpiderJsoup {
                 .userAgent(SpiderUtils.USER_AGENT)
                 .maxBodySize(10 * 1024 * 1024)
                 .ignoreContentType(true);
-            log.info("DEV_MODE: {}", DEV_MODE);
-            if (DEV_MODE) {
+            if (EnvLoader.isDevMode()) {
+                log.info("In development mode, using proxy");
                 connection.proxy("127.0.0.1", 7890);
             }
             if (consumer != null) {

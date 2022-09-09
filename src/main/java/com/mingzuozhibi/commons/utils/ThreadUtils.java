@@ -4,17 +4,41 @@ import com.mingzuozhibi.commons.logger.Logger;
 
 import java.time.Instant;
 import java.util.Random;
+import java.util.function.Supplier;
+
+import static com.mingzuozhibi.commons.utils.LoggerUtils.logError;
 
 public abstract class ThreadUtils {
 
-    public static void runWithDaemon(Logger bind, String name, Callback callback) {
+    public static void runWithAction(Logger logger, String action, Callback callback) {
+        try {
+            callback.call();
+        } catch (Exception e) {
+            logError(logger, "%s失败".formatted(action), e);
+        }
+    }
+
+    public static void runWithDaemon(Logger logger, String action, Callback callback) {
         var thread = new Thread(() -> {
-            try {
-                callback.call();
-            } catch (Exception e) {
-                bind.error("runWithDaemon(name=%s): %s".formatted(name, e));
-                e.printStackTrace();
-            }
+            runWithAction(logger, action, callback);
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    public static void logWithAction(Logger logger, String action, Supplier<Long> supplier) {
+        try {
+            logger.notify("开始%s".formatted(action));
+            var count = supplier.get();
+            logger.success("%s成功：共%d个".formatted(action, count));
+        } catch (Exception e) {
+            logError(logger, "%s失败".formatted(action), e);
+        }
+    }
+
+    public static void logWithDaemon(Logger logger, String action, Supplier<Long> supplier) {
+        var thread = new Thread(() -> {
+            logWithAction(logger, action, supplier);
         });
         thread.setDaemon(true);
         thread.start();
@@ -54,11 +78,12 @@ public abstract class ThreadUtils {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 
     public static void sleepSeconds(int seconds) {
-        sleepMillis(seconds * 100L);
+        sleepMillis(seconds * 1000L);
     }
 
     public static void sleepSeconds(int minSeconds, int maxSeconds) {

@@ -28,7 +28,7 @@ public class JmsRecorder {
     }
 
     public void jmsEndUpdate() {
-        bind.notify("更新%s：结束".formatted(this.taskName));
+        bind.success("更新%s：结束".formatted(this.taskName));
     }
 
     public boolean checkBreakCount(int maxBreakCount) {
@@ -60,7 +60,7 @@ public class JmsRecorder {
     public void jmsErrorRow(String origin, Exception e) {
         this.breakCount++;
         this.errorCount++;
-        log.debug("遇到错误：", e);
+        log.debug("遇到错误：%s".formatted(e.toString()), e);
         bind.error("遇到错误：%s".formatted(e.toString()));
         bind.error("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
