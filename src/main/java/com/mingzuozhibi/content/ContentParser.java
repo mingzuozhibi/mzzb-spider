@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.mingzuozhibi.commons.utils.FormatUtils.fmtDate;
+import static com.mingzuozhibi.commons.utils.MyTimeUtils.fmtDate;
 
 public class ContentParser {
 
