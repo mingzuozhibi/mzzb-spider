@@ -244,10 +244,10 @@ public class ContentParser {
             }
             bind.debug("解析信息：[%s][推测类型为DVD或BD]".formatted(asin));
             content.setType("Auto");
-            return;
+        } else {
+            bind.debug("解析信息：[%s][推测类型为其他]".formatted(asin));
+            content.setType("Other");
         }
-        bind.debug("解析信息：[%s][推测类型为其他]".formatted(asin));
-        content.setType("Other");
     }
 
     /*
