@@ -103,7 +103,7 @@ qt | stop)
     fi
     ;;
 rt | restart)
-    build_if -f
+    build_if
     try_stop -f
     java_jar
     ;;
@@ -133,12 +133,16 @@ fed)
     git fetch origin develop
     echo git reset --hard origin/develop
     git reset --hard origin/develop
+    echo clean -fd
+    git clean -fd
     ;;
 fem)
     echo git fetch origin master
     git fetch origin master
     echo git reset --hard origin/master
     git reset --hard origin/master
+    echo clean -fd
+    git clean -fd
     ;;
 sc)
     echo sudo systemctl $Param2 $ScName

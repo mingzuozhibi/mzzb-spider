@@ -21,7 +21,7 @@
 **安装依赖**
 
 * Install OpenJDK-17
-* Install RedisServer-6
+* Install GoogleChrome
 
 **初始配置**
 
