@@ -16,7 +16,7 @@ public abstract class SpiderUtils {
     public static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/103.0.0.0 Safari/537.36";
+            "Chrome/105.0.0.0 Safari/537.36";
 
     public static Result<String> waitResult(SessionFactory factory, String asin) {
         var url = buildUrl(asin);
@@ -34,12 +34,12 @@ public abstract class SpiderUtils {
     }
 
     public static String buildUrl(String asin) {
-        return "https://www.amazon.co.jp/" + randomWord(25) + "/dp/" + asin + "/?" +
-            randomWord(5) + "=" + randomWord(3) + "&" +
+        return "https://www.amazon.co.jp/" + randomWord(35) + "/dp/" + asin + "/?" +
+            randomWord(3) + "=" + randomWord(4) + "&" +
             "language=ja_JP&" +
-            randomWord(6) + "=" + randomWord(4) + "&" +
+            randomWord(5) + "=" + randomWord(6) + "&" +
             "_encoding=UTF8&" +
-            randomWord(3) + "=" + randomWord(5);
+            randomWord(7) + "=" + randomWord(8);
     }
 
     private static String randomWord(int count) {
