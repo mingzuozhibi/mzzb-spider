@@ -1,0 +1,7 @@
+chrome://inspect/#devices
+
+ssh -L 9222:127.0.0.1:9222 q
+
+ssh -L 9222:127.0.0.1:9222 $B
+
+/usr/bin/google-chrome --remote-debugging-port=9222 --disable-features=TranslateUI --disable-extensions --disable-background-networking --safebrowsing-disable-auto-update --disable-sync --metrics-recording-only --disable-default-apps --mute-audio --no-first-run --no-default-browser-check --disable-plugin-power-saver --disable-popup-blocking --headless --user-data-dir=/tmp/remote-profile
