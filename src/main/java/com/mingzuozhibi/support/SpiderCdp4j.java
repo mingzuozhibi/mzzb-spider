@@ -40,8 +40,6 @@ public abstract class SpiderCdp4j {
 
     public static Result<String> waitResultCdp4j(SessionFactory factory, String url) {
         try (var session = factory.create()) {
-            session.clearCookies();
-            session.setUserAgent(SpiderUtils.USER_AGENT);
             session.navigate(url);
             session.waitDocumentReady(18000);
             session.wait(2000);
