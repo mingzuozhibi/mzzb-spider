@@ -1,6 +1,7 @@
 package com.mingzuozhibi;
 
 import com.mingzuozhibi.commons.base.BaseController;
+import com.mingzuozhibi.commons.domain.Result;
 import com.mingzuozhibi.commons.domain.SearchTask;
 import com.mingzuozhibi.commons.logger.LoggerBind;
 import com.mingzuozhibi.content.Content;
@@ -10,7 +11,9 @@ import com.mingzuozhibi.support.SpiderCdp4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import static com.mingzuozhibi.commons.base.BaseKeys.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.mingzuozhibi.commons.base.BaseKeys.Name;
 import static com.mingzuozhibi.support.SpiderUtils.waitResult;
 
 @RestController
@@ -21,14 +24,16 @@ public class TestController extends BaseController {
     private ContentSpider contentSpider;
 
     @GetMapping("/test/{asin}")
-    public void fetchContent(@PathVariable String asin) {
+    public String fetchContent(@PathVariable String asin) {
         var task = new SearchTask<Content>(asin);
+        var result = new AtomicReference<Result<Content>>();
         SpiderCdp4j.doInSessionFactory(factory -> {
             var recorder = new JmsRecorder(bind, "碟片信息", 1);
-            var result = contentSpider.fetchContent(recorder, task,
+            var taskResult = contentSpider.fetchContent(recorder, task,
                 () -> waitResult(factory, task.getKey()));
-            amqpSender.send(CONTENT_RETURN, gson.toJson(result));
+            result.set(Result.ofTask(taskResult));
         });
+        return baseResult(result.get());
     }
 
 }
