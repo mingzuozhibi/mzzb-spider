@@ -27,10 +27,10 @@ public class TestController extends BaseController {
     public String fetchContent(@PathVariable String asin) {
         var task = new SearchTask<Content>(asin);
         var result = new AtomicReference<Result<Content>>();
-        SpiderCdp4j.doInSessionFactory(factory -> {
+        SpiderCdp4j.doInSessionFactory(supplier -> {
             var recorder = new JmsRecorder(bind, "碟片信息", 1);
             var taskResult = contentSpider.fetchContent(recorder, task,
-                () -> waitResult(factory, task.getKey()));
+                () -> waitResult(supplier, task.getKey()));
             result.set(Result.ofTask(taskResult));
         });
         return baseResult(result.get());
