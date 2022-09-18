@@ -79,8 +79,8 @@ public class MzzbSpiderListener extends BaseSupport {
         var token = getParameterized(SearchTask.class, Content.class);
         SearchTask<Content> task = gson.fromJson(json, token.getType());
         var recorder = new JmsRecorder(logger, "碟片信息", 1);
-        var bodyResult = waitResult(null, task.getKey());
-        var result = contentSpider.fetchContent(recorder, task, bodyResult);
+        var result = contentSpider.fetchContent(recorder, task,
+            () -> waitResult(null, task.getKey()));
         amqpSender.send(CONTENT_RETURN, gson.toJson(result));
     }
 

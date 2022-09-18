@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 import static com.mingzuozhibi.support.SpiderCdp4j.doInSessionFactory;
 import static com.mingzuozhibi.support.SpiderUtils.waitResult;
@@ -32,8 +33,8 @@ public class ContentSpider extends BaseSupport {
                 var asin = task.getAsin();
                 try {
                     if (recorder.checkBreakCount(5)) break;
-                    var bodyResult = waitResult(factory, asin);
-                    var result = fetchContent(recorder, new SearchTask<>(asin), bodyResult);
+                    var result = fetchContent(recorder, new SearchTask<>(asin),
+                        () -> waitResult(factory, asin));
                     if (result.isSuccess()) {
                         results.add(result.getData());
                     }
@@ -49,11 +50,14 @@ public class ContentSpider extends BaseSupport {
     }
 
     public SearchTask<Content> fetchContent(
-        JmsRecorder recorder, SearchTask<Content> task, Result<String> bodyResult
+        JmsRecorder recorder,
+        SearchTask<Content> task,
+        Supplier<Result<String>> supplier
     ) {
         // 开始查询
         var asin = task.getKey();
         recorder.jmsStartUpdateRow(asin);
+        var bodyResult = supplier.get();
         if (bodyResult.hasError()) {
             recorder.jmsFailedRow(asin, bodyResult.getMessage());
             return task.withError(bodyResult.getMessage());
