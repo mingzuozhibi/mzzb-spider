@@ -7,7 +7,6 @@ import com.mingzuozhibi.commons.utils.ThreadUtils;
 import com.mingzuozhibi.content.*;
 import com.mingzuozhibi.history.HistorySpider;
 import com.mingzuozhibi.history.TaskOfHistory;
-import com.mingzuozhibi.support.JmsRecorder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,14 +41,13 @@ public class MzzbSpiderListener extends BaseSupport {
         var logger = amqpSender.bind(Name.SPIDER_HISTORY);
         ThreadUtils.runWithDaemon(logger, "更新上架信息", () -> {
             try {
-                var tasks = TaskOfHistory.buildTasks(60, 10);
+                var tasks = TaskOfHistory.buildTasks(35, 5);
                 var results = historySpider.fetchAllHistory(tasks);
                 amqpSender.send(HISTORY_FINISH, gson.toJson(results));
                 amqpSender.send(FETCH_TASK_DONE1, gson.toJson(true));
             } catch (Exception e) {
                 amqpSender.send(FETCH_TASK_DONE1, gson.toJson(false));
-                logger.error(e.toString());
-                logger.warning("更新上架信息：失败");
+                throw e;
             } finally {
                 startFetchContent(json);
             }
@@ -67,21 +65,18 @@ public class MzzbSpiderListener extends BaseSupport {
                 amqpSender.send(FETCH_TASK_DONE2, gson.toJson(results.size()));
             } catch (Exception e) {
                 amqpSender.send(FETCH_TASK_DONE2, gson.toJson(0));
-                logger.error(e.toString());
-                logger.warning("更新日亚排名：失败");
+                throw e;
             }
         });
     }
 
     @RabbitListener(queues = CONTENT_SEARCH)
     public void contentSearch(String json) {
-        var logger = amqpSender.bind(Name.SPIDER_CONTENT);
         var token = getParameterized(SearchTask.class, Content.class);
         SearchTask<Content> task = gson.fromJson(json, token.getType());
-        var recorder = new JmsRecorder(logger, "碟片信息", 1);
-        var result = contentSpider.fetchContent(recorder, task,
+        var result = contentSpider.fetchContent(task.getKey(),
             () -> waitResult(null, task.getKey()));
-        amqpSender.send(CONTENT_RETURN, gson.toJson(result));
+        amqpSender.send(CONTENT_RETURN, gson.toJson(task.withResult(result)));
     }
 
 }

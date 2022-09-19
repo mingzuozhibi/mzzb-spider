@@ -32,7 +32,7 @@ public class HistorySpider extends BaseSupport {
 
         var doneResults = new LinkedList<History>();
         for (var task : tasks) {
-            String origin = task.getName();
+            var origin = task.getName();
             try {
                 if (recorder.checkBreakCount(5)) break;
                 recorder.jmsStartUpdateRow(origin);
