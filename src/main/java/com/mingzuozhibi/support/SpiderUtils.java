@@ -28,7 +28,7 @@ public abstract class SpiderUtils {
         } else {
             result = waitResultJsoup(url);
         }
-        if (result.isSuccess() && StringUtils.isEmpty(result.getData())) {
+        if (result.testData(StringUtils::isEmpty)) {
             return Result.ofError(String.format("抓取碟片[%s]：结果为空", asin));
         }
         return result;

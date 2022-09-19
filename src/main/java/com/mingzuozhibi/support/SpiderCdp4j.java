@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 @Slf4j
 public abstract class SpiderCdp4j {
 
-    public static void doInSessionFactory(Consumer<Supplier<Session>> consumer) {
+    public static void doWithSession(Consumer<Supplier<Session>> consumer) {
         var uuid = UUID.randomUUID().toString().substring(0, 8);
         List<String> command = new ArrayList<>();
         command.add("--headless");

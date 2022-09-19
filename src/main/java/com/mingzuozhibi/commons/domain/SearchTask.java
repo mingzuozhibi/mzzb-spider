@@ -37,4 +37,12 @@ public class SearchTask<T> {
         return this;
     }
 
+    public SearchTask<T> withResult(Result<T> result) {
+        if (result.isSuccess()) {
+            return withData(result.getData());
+        } else {
+            return withError(result.getMessage());
+        }
+    }
+
 }

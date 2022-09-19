@@ -7,7 +7,6 @@ import com.mingzuozhibi.commons.utils.ThreadUtils;
 import com.mingzuozhibi.content.*;
 import com.mingzuozhibi.history.HistorySpider;
 import com.mingzuozhibi.history.TaskOfHistory;
-import com.mingzuozhibi.support.JmsRecorder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -75,13 +74,11 @@ public class MzzbSpiderListener extends BaseSupport {
 
     @RabbitListener(queues = CONTENT_SEARCH)
     public void contentSearch(String json) {
-        var logger = amqpSender.bind(Name.SPIDER_CONTENT);
         var token = getParameterized(SearchTask.class, Content.class);
         SearchTask<Content> task = gson.fromJson(json, token.getType());
-        var recorder = new JmsRecorder(logger, "碟片信息", 1);
-        var result = contentSpider.fetchContent(recorder, task,
+        var result = contentSpider.fetchContent(task.getKey(),
             () -> waitResult(null, task.getKey()));
-        amqpSender.send(CONTENT_RETURN, gson.toJson(result));
+        amqpSender.send(CONTENT_RETURN, gson.toJson(task.withResult(result)));
     }
 
 }
