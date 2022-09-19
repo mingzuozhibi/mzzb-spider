@@ -20,7 +20,8 @@ import java.util.regex.Pattern;
 @LoggerBind(Name.SPIDER_HISTORY)
 public class HistoryParser extends BaseSupport {
 
-    private final Pattern pattern = Pattern.compile("/dp/([A-Z\\d]+)/");
+    private final Pattern asinPattern = Pattern.compile("/dp/([A-Z0-9]{10})/");
+    private final Pattern datePattern = Pattern.compile("発売予定日は(\\d+)年(\\d+)月(\\d+)日です。");
 
     public Result<List<History>> parse(String body) {
         try {
@@ -43,18 +44,27 @@ public class HistoryParser extends BaseSupport {
 
     private List<History> parseElement(Element element) {
         List<History> results = new LinkedList<>();
-        element.select(".a-size-base.a-link-normal.a-text-bold").forEach(e -> {
-            var matcher = pattern.matcher(e.attr("href"));
+        element.select(".a-size-base.a-link-normal.a-text-bold").forEach(type -> {
+            var matcher = asinPattern.matcher(type.attr("href"));
             if (matcher.find()) {
                 var history = new History();
                 history.setAsin(matcher.group(1));
-                history.setType(e.text().trim());
+                history.setType(type.text().trim());
+                history.setDate(getDate(element));
                 history.setTitle(getTitle(element, history));
                 history.setCreateOn(Instant.now());
                 results.add(history);
             }
         });
         return results;
+    }
+
+    private String getDate(Element element) {
+        var first = element.select("span[aria-label] .a-color-secondary").first();
+        if (first == null) return null;
+        var matcher = datePattern.matcher(first.text());
+        if (!matcher.find()) return null;
+        return "%s/%s/%s".formatted(matcher.group(1), matcher.group(2), matcher.group(3));
     }
 
     private String getTitle(Element element, History history) {

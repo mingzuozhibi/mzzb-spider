@@ -11,6 +11,7 @@ public class History {
 
     private String asin;
     private String type;
+    private String date;
     private String title;
     private Instant createOn;
 
