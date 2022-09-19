@@ -47,8 +47,7 @@ public class MzzbSpiderListener extends BaseSupport {
                 amqpSender.send(FETCH_TASK_DONE1, gson.toJson(true));
             } catch (Exception e) {
                 amqpSender.send(FETCH_TASK_DONE1, gson.toJson(false));
-                logger.error(e.toString());
-                logger.warning("更新上架信息：失败");
+                throw e;
             } finally {
                 startFetchContent(json);
             }
@@ -66,8 +65,7 @@ public class MzzbSpiderListener extends BaseSupport {
                 amqpSender.send(FETCH_TASK_DONE2, gson.toJson(results.size()));
             } catch (Exception e) {
                 amqpSender.send(FETCH_TASK_DONE2, gson.toJson(0));
-                logger.error(e.toString());
-                logger.warning("更新日亚排名：失败");
+                throw e;
             }
         });
     }
