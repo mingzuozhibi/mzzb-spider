@@ -7,6 +7,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@SuppressWarnings("unused")
 public class SearchTask<T> {
 
     public SearchTask(String key) {
@@ -16,13 +17,9 @@ public class SearchTask<T> {
     }
 
     private String uuid;
-
     private String key;
-
     private boolean success;
-
     private String message;
-
     private T data;
 
     public SearchTask<T> withError(String message) {
