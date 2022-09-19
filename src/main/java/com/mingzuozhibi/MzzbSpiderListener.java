@@ -42,7 +42,7 @@ public class MzzbSpiderListener extends BaseSupport {
         var logger = amqpSender.bind(Name.SPIDER_HISTORY);
         ThreadUtils.runWithDaemon(logger, "更新上架信息", () -> {
             try {
-                var tasks = TaskOfHistory.buildTasks(60, 10);
+                var tasks = TaskOfHistory.buildTasks(35, 5);
                 var results = historySpider.fetchAllHistory(tasks);
                 amqpSender.send(HISTORY_FINISH, gson.toJson(results));
                 amqpSender.send(FETCH_TASK_DONE1, gson.toJson(true));
