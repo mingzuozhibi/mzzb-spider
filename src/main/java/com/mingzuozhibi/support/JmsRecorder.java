@@ -2,9 +2,10 @@ package com.mingzuozhibi.support;
 
 import com.mingzuozhibi.commons.logger.Logger;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 @Getter
 public class JmsRecorder {
 
@@ -60,7 +61,7 @@ public class JmsRecorder {
     public void jmsErrorRow(String origin, Exception e) {
         this.breakCount++;
         this.errorCount++;
-        log.debug("遇到错误：%s".formatted(e.toString()), e);
+        bind.error(buildStackTrace(e));
         bind.error("遇到错误：%s".formatted(e.toString()));
         bind.error("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
@@ -69,6 +70,12 @@ public class JmsRecorder {
         var skipCount = this.taskSize - this.fetchCount;
         bind.notify("There are %d tasks, %d updates, %d successes, %d failures, and %d skips.".formatted(
             this.taskSize, this.fetchCount, this.doneCount, this.errorCount, skipCount));
+    }
+
+    private static String buildStackTrace(Exception e) {
+        var out = new StringWriter();
+        e.printStackTrace(new PrintWriter(out));
+        return out.toString();
     }
 
 }
