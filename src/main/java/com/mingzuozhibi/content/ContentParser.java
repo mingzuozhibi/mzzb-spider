@@ -46,7 +46,6 @@ public class ContentParser {
          * 解析商品编号，应该与传入的相同
          * 解析发售日期，套装商品解析不到
          */
-
         parseAsinAndDateAndRank(document);
 
         if (StringUtils.isEmpty(content.getAsin())) {
@@ -68,13 +67,6 @@ public class ContentParser {
         }
 
         /*
-         * 解析碟片库存，商品缺货没有价格
-         * 解析碟片价格，有货时应该有价格
-         */
-
-        parseStockAndPrice(document);
-
-        /*
          * 解析碟片类型，三种方法确保获取
          * 解析套装商品，解析套装发售日期
          */
@@ -89,11 +81,7 @@ public class ContentParser {
             }
         }
         if (Objects.isNull(content.getDate())) {
-            if (content.isBuyset()) {
-                bind.debug("解析信息：[%s][未发现套装发售日期]".formatted(asin));
-            } else {
-                bind.debug("解析信息：[%s][未发现发售日期]".formatted(asin));
-            }
+            bind.debug("解析信息：[%s][未发现发售日期][套装=%b]".formatted(asin, content.isBuyset()));
         }
 
         return Result.ofData(content);
@@ -104,7 +92,25 @@ public class ContentParser {
      */
 
     private void parseAsinAndDateAndRank(Document document) {
-        for (var element : document.select("#detailBulletsWrapper_feature_div span.a-list-item")) {
+        {
+            var elements = document.select("#detailBulletsWrapper_feature_div span.a-list-item");
+            if (elements.size() > 0) {
+                parseDetails_1(elements);
+                bind.debug("解析信息：[%s][发现<登录情报>模板1]".formatted(asin));
+                return;
+            }
+        }
+        {
+            var elements = document.select("#prodDetails tr");
+            if (elements.size() > 0) {
+                parseDetails_2(elements);
+                bind.debug("解析信息：[%s][发现<登录情报>模板2]".formatted(asin));
+            }
+        }
+    }
+
+    private void parseDetails_1(Elements elements) {
+        for (var element : elements) {
             var line = element.text();
             // check asin
             if (line.startsWith("ASIN")) {
@@ -127,32 +133,49 @@ public class ContentParser {
         }
     }
 
+    private void parseDetails_2(Elements elements) {
+        var ch = (char) 8206;
+        for (var element : elements) {
+            var name = element.select("th").text();
+            var text = element.select("td").text();
+
+            if (text.charAt(0) == ch) {
+                text = text.substring(1);
+            }
+
+            switch (name) {
+                case "ASIN" -> content.setAsin(text);
+                case "発売日" -> content.setDate(text);
+                case "Amazon 売れ筋ランキング" -> {
+                    var matcher = patternOfRank.matcher(text);
+                    if (matcher.find()) {
+                        content.setRank(parseNumber(matcher.group(1)));
+                    }
+                }
+            }
+        }
+    }
+
     /*
      * 解析碟片标题
      */
 
     private void parseTitle(Document document) {
-        // parse title
-        var fullTitle = document.select("#productTitle").text();
-        content.setTitle(fullTitle.substring(0, Math.min(fullTitle.length(), 500)));
-    }
-
-    /*
-     * 解析碟片库存和碟片价格
-     */
-
-    private void parseStockAndPrice(Document document) {
-        if (document.select("#outOfStock").size() > 0) {
-            content.setOutOfStock(true);
+        {
+            var element = document.selectFirst("#productTitle");
+            if (element != null) {
+                content.setTitle(element.text());
+                bind.debug("解析信息：[%s][发现<碟片标题>模板1]".formatted(asin));
+                return;
+            }
         }
-        var buynew = document.select("#buyNewSection");
-        if (!buynew.isEmpty()) {
-            content.setPrice(parseNumber(getText(buynew)));
+        {
+            var element = document.selectFirst("#title");
+            if (element != null) {
+                content.setTitle(element.text());
+                bind.debug("解析信息：[%s][发现<碟片标题>模板2]".formatted(asin));
+            }
         }
-    }
-
-    private String getText(Elements buynew) {
-        return Objects.requireNonNull(buynew.first()).text().trim();
     }
 
     /*
@@ -194,7 +217,7 @@ public class ContentParser {
     private void parseTypeBySwatch(Document document) {
         var elements = document.select("li.swatchElement.selected a>span");
         if (elements.size() > 0) {
-            var type = getText(elements);
+            var type = trimFirstText(elements);
             switch (type) {
                 case "3D", "4K", "Blu-ray" -> content.setType("Bluray");
                 case "DVD" -> content.setType("Dvd");
@@ -211,7 +234,7 @@ public class ContentParser {
             return;
         }
         if (Objects.equals("DVD", category)) {
-            var title = document.select("#productTitle").text();
+            var title = content.getTitle();
             var isBD = title.contains("[Blu-ray]");
             var isDVD = title.contains("[DVD]");
             var hasBD = title.contains("Blu-ray");
@@ -257,7 +280,7 @@ public class ContentParser {
     private void parseDateOfBuyset(Document document) {
         var elements = document.select("#bundle-v2-btf-component-release-date-label-1");
         if (elements.size() == 1) {
-            var matcher = patternOfDate2.matcher(getText(elements));
+            var matcher = patternOfDate2.matcher(trimFirstText(elements));
             if (matcher.find()) {
                 setDate(matcher);
                 bind.debug("解析信息：[%s][发现套装发售日期]".formatted(asin));
@@ -268,7 +291,7 @@ public class ContentParser {
     private void parseDateOfAvailability(Document document) {
         var elements = document.select("#availability>span.a-size-medium.a-color-success");
         if (elements.size() == 1) {
-            var matcher = patternOfDate2.matcher(getText(elements));
+            var matcher = patternOfDate2.matcher(trimFirstText(elements));
             if (matcher.find()) {
                 setDate(matcher);
                 bind.debug("解析信息：[%s][发现疑似发售日期]".formatted(asin));
@@ -307,6 +330,10 @@ public class ContentParser {
             bind.debug("解析信息：[%s][parseNumber error：%s]".formatted(asin, e));
             return null;
         }
+    }
+
+    private static String trimFirstText(Elements elements) {
+        return Objects.requireNonNull(elements.first()).text().trim();
     }
 
 }
