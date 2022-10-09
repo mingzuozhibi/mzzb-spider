@@ -96,7 +96,7 @@ public class ContentParser {
             var elements = document.select("#detailBulletsWrapper_feature_div span.a-list-item");
             if (elements.size() > 0) {
                 parseDetails_1(elements);
-                bind.debug("解析信息：[%s][发现<登录情报>模板1]".formatted(asin));
+//                bind.debug("解析信息：[%s][发现<登录情报>模板1]".formatted(asin));
                 return;
             }
         }
@@ -165,7 +165,7 @@ public class ContentParser {
             var element = document.selectFirst("#productTitle");
             if (element != null) {
                 content.setTitle(element.text());
-                bind.debug("解析信息：[%s][发现<碟片标题>模板1]".formatted(asin));
+//                bind.debug("解析信息：[%s][发现<碟片标题>模板1]".formatted(asin));
                 return;
             }
         }
@@ -239,7 +239,6 @@ public class ContentParser {
             var isDVD = title.contains("[DVD]");
             var hasBD = title.contains("Blu-ray");
             var hasDVD = title.contains("DVD");
-            var likeBD = title.contains("BD");
             if (isBD && !isDVD) {
                 content.setType("Bluray");
                 bind.debug("解析信息：[%s][推测类型为BD]".formatted(asin));
@@ -283,7 +282,7 @@ public class ContentParser {
             var matcher = patternOfDate2.matcher(trimFirstText(elements));
             if (matcher.find()) {
                 setDate(matcher);
-                bind.debug("解析信息：[%s][发现套装发售日期]".formatted(asin));
+//                bind.debug("解析信息：[%s][发现套装发售日期]".formatted(asin));
             }
         }
     }
@@ -294,7 +293,7 @@ public class ContentParser {
             var matcher = patternOfDate2.matcher(trimFirstText(elements));
             if (matcher.find()) {
                 setDate(matcher);
-                bind.debug("解析信息：[%s][发现疑似发售日期]".formatted(asin));
+//                bind.debug("解析信息：[%s][发现疑似发售日期]".formatted(asin));
             }
         }
     }
