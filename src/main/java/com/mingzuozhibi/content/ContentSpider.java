@@ -35,7 +35,7 @@ public class ContentSpider extends BaseSupport {
                     if (result.isSuccess()) {
                         var content = result.getData();
                         results.add(content);
-                        if (content.isOffTheShelf()) {
+                        if (content.isLogoff()) {
                             recorder.jmsSuccessRow(asin, "碟片可能已下架");
                         } else {
                             recorder.jmsSuccessRow(asin, "%d => %d".formatted(
@@ -65,7 +65,7 @@ public class ContentSpider extends BaseSupport {
             if (body.contains("何かお探しですか？")) {
                 var content = new Content();
                 content.setAsin(asin);
-                content.setOffTheShelf(true);
+                content.setLogoff(true);
                 return Result.ofData(content);
             } else {
                 return Result.ofError("发现日亚反爬虫系统");
