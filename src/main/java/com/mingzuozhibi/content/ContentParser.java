@@ -316,8 +316,8 @@ public class ContentParser {
     private Integer parseNumber(String input) {
         try {
             var builder = new StringBuilder();
-            input.chars()
-                .filter(cp -> cp >= '0' && cp <= '9')
+            input.codePoints()
+                .filter(point -> point >= '0' && point <= '9')
                 .forEach(builder::appendCodePoint);
             return Integer.parseInt(builder.toString());
         } catch (RuntimeException e) {
