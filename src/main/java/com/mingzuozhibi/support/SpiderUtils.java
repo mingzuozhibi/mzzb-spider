@@ -29,7 +29,7 @@ public abstract class SpiderUtils {
             result = waitResultJsoup(url);
         }
         if (result.test(StringUtils::isEmpty)) {
-            return Result.ofError(String.format("抓取碟片[%s]：结果为空", asin));
+            return Result.ofError("抓取碟片[%s]：结果为空".formatted(asin));
         }
         return result;
     }

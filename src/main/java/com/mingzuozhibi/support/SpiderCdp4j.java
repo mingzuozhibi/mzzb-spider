@@ -56,7 +56,7 @@ public abstract class SpiderCdp4j {
 
     private static void killChrome(String uuid) {
         var format = "ps -x | grep 'target.name=%s' | grep -v grep | awk '{print $1}' | xargs -t kill -9 2>&1";
-        var cmds = new String[]{"/bin/bash", "-l", "-c", String.format(format, uuid)};
+        var cmds = new String[]{"/bin/bash", "-l", "-c", format.formatted(uuid)};
         try {
             var process = Runtime.getRuntime().exec(cmds);
             process.waitFor();
