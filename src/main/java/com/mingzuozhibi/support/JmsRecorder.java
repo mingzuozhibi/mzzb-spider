@@ -54,7 +54,7 @@ public class JmsRecorder {
     public void jmsFailedRow(String origin, String message) {
         this.breakCount++;
         this.errorCount++;
-        bind.warning("数据异常：%s".formatted(message));
+        bind.warning("数据异常：[%s][%s]".formatted(origin, message));
         bind.warning("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
 
@@ -62,7 +62,7 @@ public class JmsRecorder {
         this.breakCount++;
         this.errorCount++;
         bind.error(buildStackTrace(e));
-        bind.error("遇到错误：%s".formatted(e.toString()));
+        bind.error("遇到错误：[%s][%s]".formatted(origin, e.toString()));
         bind.error("更新失败：[%s](%s/%d)".formatted(origin, this.fetchCount, this.taskSize));
     }
 
