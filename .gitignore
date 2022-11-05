@@ -3,6 +3,7 @@
 /var/
 /etc/amazon-cookie
 /etc/app.properties
+/dat/remote-pass.txt
 
 ### Spring Boot ###
 HELP.md
