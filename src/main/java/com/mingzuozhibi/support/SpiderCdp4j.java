@@ -54,6 +54,7 @@ public abstract class SpiderCdp4j {
 
     public static Result<String> waitResultCdp4j(Supplier<Session> supplier, String url) {
         try (var session = supplier.get()) {
+            session.setUserAgent(SpiderUtils.USER_AGENT);
             session.navigate(url);
             session.waitDocumentReady(18000);
             session.wait(2000);

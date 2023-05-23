@@ -16,7 +16,8 @@ public abstract class SpiderUtils {
     public static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/105.0.0.0 Safari/537.36";
+            "Chrome/113.0.0.0 Safari/537.36 " +
+            "Edg/113.0.1774.50";
 
     public static Result<String> waitResult(Supplier<Session> supplier, String asin) {
         var url = buildUrl(asin);
