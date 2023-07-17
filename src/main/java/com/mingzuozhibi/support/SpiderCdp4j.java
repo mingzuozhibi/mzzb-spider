@@ -4,12 +4,14 @@ import com.mingzuozhibi.commons.domain.Result;
 import io.webfolder.cdp.Launcher;
 import io.webfolder.cdp.session.Session;
 import io.webfolder.cdp.session.SessionFactory;
+import io.webfolder.cdp.type.network.Cookie;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @Slf4j
 public abstract class SpiderCdp4j {
@@ -36,8 +38,20 @@ public abstract class SpiderCdp4j {
         try (var session = factory.create(browserContextId)) {
             var network = session.getCommand().getNetwork();
             network.clearBrowserCookies();
+            getCookies(factory).forEach(cookie -> {
+                network.setCookie(cookie.getName(), cookie.getValue(), null, cookie.getDomain(),
+                    cookie.getPath(), false, false, cookie.getSameSite(), cookie.getExpires());
+            });
         }
         return browserContextId;
+    }
+
+    private static Stream<Cookie> getCookies(SessionFactory factory) {
+        try (var session = factory.create()) {
+            return session.getCommand().getNetwork()
+                .getCookies(List.of(".amazon.co.jp")).stream()
+                .filter(cookie -> cookie.getName().contains("acbjp"));
+        }
     }
 
     private static void killChrome(String uuid) {
