@@ -13,11 +13,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static com.mingzuozhibi.support.SpiderJsoup.waitResultJsoup;
+import static com.mingzuozhibi.support.SpiderUtils.readCookie;
 
 @Slf4j
 @Component
 @LoggerBind(Name.SPIDER_HISTORY)
 public class HistorySpider extends BaseSupport {
+
+    public final Result<String> cookie = readCookie();
 
     @Autowired
     private HistoryParser historyParser;
@@ -55,12 +58,17 @@ public class HistorySpider extends BaseSupport {
     }
 
     private Result<List<History>> fetchHistory(TaskOfHistory task) {
-        var bodyResult = waitResultJsoup(task.getUrl());
-        if (bodyResult.isSuccess()) {
-            return historyParser.parse(bodyResult.getData());
-        } else {
-            return Result.ofError(bodyResult.getMessage());
+        if (cookie.isSuccess()) {
+            var bodyResult = waitResultJsoup(task.getUrl(), connection -> {
+                connection.header("cookie", cookie.getData());
+            });
+            if (bodyResult.isSuccess()) {
+                return historyParser.parse(bodyResult.getData());
+            } else {
+                return Result.ofError(bodyResult.getMessage());
+            }
         }
+        return Result.ofError(cookie.getMessage());
     }
 
 }

@@ -5,6 +5,8 @@ import io.webfolder.cdp.session.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.function.Supplier;
 
 import static com.mingzuozhibi.support.SpiderCdp4j.waitResultCdp4j;
@@ -36,6 +38,20 @@ public abstract class SpiderUtils {
 
     public static String buildUrl(String asin) {
         return "https://www.amazon.co.jp/dp/%s?language=ja_JP#detailBullets_feature_div".formatted(asin);
+    }
+
+    public static Result<String> readCookie() {
+        try {
+            var file = new File("etc", "amazon-cookie");
+            if (file.exists() && file.isFile() && file.canRead()) {
+                return Result.ofData(Files.readAllLines(file.toPath()).get(0));
+            }
+            log.error("读取Cookie失败：" + file.getAbsolutePath());
+            return Result.ofError("读取Cookie失败");
+        } catch (Exception e) {
+            log.error("读取Cookie失败：", e);
+            return Result.ofError("读取Cookie失败");
+        }
     }
 
 }
